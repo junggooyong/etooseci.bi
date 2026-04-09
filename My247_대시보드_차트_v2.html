@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이투스ECI My247 App | 데이터 대시보드 2026.03~04 (v2 - 데이터 레이블)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1557b0;
+      --secondary: #34a853;
+      --accent: #fbbc04;
+      --danger: #ea4335;
+      --purple: #9b59b6;
+      --orange: #e67e22;
+      --teal: #1abc9c;
+      --bg: #f0f4f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --sidebar-w: 240px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: linear-gradient(180deg, #0f2444 0%, #1a3a6e 100%);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      box-shadow: 2px 0 12px rgba(0, 0, 0, .25);
+    }
+
+    .sidebar-logo {
+      padding: 22px 20px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .sidebar-logo h1 {
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .sidebar-logo p {
+      color: rgba(255, 255, 255, .55);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .sidebar-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #1f2937;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-top: 6px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 10px 0;
+    }
+
+    .nav-group {
+      margin-bottom: 6px;
+    }
+
+    .nav-label {
+      color: rgba(255, 255, 255, .35);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 8px 20px 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      color: rgba(255, 255, 255, .75);
+      font-size: 12.5px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all .2s;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, .08);
+      color: #fff;
+      border-left-color: rgba(255, 255, 255, .3);
+    }
+
+    .nav-item.active {
+      background: rgba(26, 115, 232, .3);
+      color: #fff;
+      border-left-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .nav-item .icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255, 255, 255, .1);
+      color: rgba(255, 255, 255, .4);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    /* ── Main ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+    }
+
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .topbar-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .date-badge {
+      background: var(--primary);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .content {
+      padding: 28px 30px;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 40px;
+      scroll-margin-top: 70px;
+    }
+
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title .emoji {
+      font-size: 20px;
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .07);
+      border-top: 3px solid transparent;
+      transition: transform .15s, box-shadow .15s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+    }
+
+    .kpi-card.blue {
+      border-top-color: var(--primary);
+    }
+
+    .kpi-card.green {
+      border-top-color: var(--secondary);
+    }
+
+    .kpi-card.orange {
+      border-top-color: var(--orange);
+    }
+
+    .kpi-card.purple {
+      border-top-color: var(--purple);
+    }
+
+    .kpi-card.teal {
+      border-top-color: var(--teal);
+    }
+
+    .kpi-card.red {
+      border-top-color: var(--danger);
+    }
+
+    .kpi-card.yellow {
+      border-top-color: var(--accent);
+    }
+
+    .kpi-card.indigo {
+      border-top-color: #6366f1;
+    }
+
+    .kpi-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .kpi-unit {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── Chart Grid ── */
+    .chart-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .chart-grid-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .chart-grid-3 {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .chart-grid-13 {
+      grid-template-columns: 1fr 2fr;
+    }
+
+    .chart-grid-31 {
+      grid-template-columns: 2fr 1fr;
+    }
+
+    .chart-full {
+      grid-column: 1 / -1;
+    }
+
+    .chart-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .07);
+      overflow: hidden;
+    }
+
+    .chart-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-card-title .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .chart-wrap {
+      position: relative;
+    }
+
+    .chart-wrap.h200 {
+      height: 200px;
+    }
+
+    .chart-wrap.h250 {
+      height: 250px;
+    }
+
+    .chart-wrap.h300 {
+      height: 300px;
+    }
+
+    .chart-wrap.h350 {
+      height: 350px;
+    }
+
+    .chart-wrap.h380 {
+      height: 380px;
+    }
+
+    .chart-wrap.h420 {
+      height: 420px;
+    }
+
+    /* ── Stat table ── */
+    .stat-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .stat-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .stat-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .stat-table .rank {
+      color: var(--text-muted);
+      font-weight: 700;
+      width: 30px;
+    }
+
+    .stat-table .bar-cell {
+      width: 100px;
+    }
+
+    .mini-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--primary);
+    }
+
+    /* ── Tabs ── */
+    .tab-btns {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* ── Legend ── */
+    .legend-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-sq {
+      width: 12px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .chart-grid-2,
+      .chart-grid-3,
+      .chart-grid-13,
+      .chart-grid-31 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, .18);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════ SIDEBAR ═══════ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>이투스ECI My247 App</h1>
+      <p>데이터 대시보드</p>
+      <span class="sidebar-badge">2026.03.03 ~ 04.03</span>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-label">Overview</div>
+        <a class="nav-item active" href="#kpi" onclick="setActive(this)">
+          <span class="icon">📌</span> 핵심 KPI 지표
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">학습 분석</div>
+        <a class="nav-item" href="#study" onclick="setActive(this)">
+          <span class="icon">📈</span> 순공시간 분석
+        </a>
+        <a class="nav-item" href="#branch" onclick="setActive(this)">
+          <span class="icon">🏫</span> 지점별 현황
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">앱 사용 현황</div>
+        <a class="nav-item" href="#device" onclick="setActive(this)">
+          <span class="icon">📱</span> 기기 & 로그인
+        </a>
+        <a class="nav-item" href="#login" onclick="setActive(this)">
+          <span class="icon">👥</span> 사용자 유형
+        </a>
+        <a class="nav-item" href="#download" onclick="setActive(this)">
+          <span class="icon">📲</span> 앱 다운로드
+        </a>
+        <a class="nav-item" href="#pageview" onclick="setActive(this)">
+          <span class="icon">📊</span> 페이지 조회수
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">콘텐츠 분석</div>
+        <a class="nav-item" href="#lecture" onclick="setActive(this)">
+          <span class="icon">🎬</span> 인강교재 검색
+        </a>
+        <a class="nav-item" href="#pass" onclick="setActive(this)">
+          <span class="icon">🎫</span> 인강 패스 선택
+        </a>
+        <a class="nav-item" href="#subject" onclick="setActive(this)">
+          <span class="icon">📚</span> 과목 선택 현황
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">학생 관리</div>
+        <a class="nav-item" href="#attend" onclick="setActive(this)">
+          <span class="icon">📋</span> 출결변경 신청
+        </a>
+        <a class="nav-item" href="#univ" onclick="setActive(this)">
+          <span class="icon">🎓</span> 목표 대학 설정
+        </a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      데이터 기준: 2026.03.03 ~ 04.03<br>
+      총 31일간 누적 데이터
+    </div>
+  </nav>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">🏫 이투스ECI My247 App — 통합 데이터 대시보드</div>
+      <div class="topbar-meta">
+        <span>📅 기준: 2026.03.03 ~ 2026.04.03</span>
+        <span class="date-badge">31일 · 실데이터</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ═══ KPI ═══ -->
+      <section class="section" id="kpi">
+        <div class="section-title"><span class="emoji">📌</span> 핵심 KPI 지표</div>
+        <div class="kpi-grid">
+          <div class="kpi-card blue">
+            <div class="kpi-label">총 순공시간</div>
+            <div class="kpi-value">98,762<span class="kpi-unit">h</span></div>
+            <div class="kpi-sub">31일 누적 합산 기준</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">앱 이용 학생수</div>
+            <div class="kpi-value">1,123<span class="kpi-unit">명</span></div>
+            <div class="kpi-sub">순공시간 기록 학생</div>
+          </div>
+          <div class="kpi-card orange">
+            <div class="kpi-label">학생 평균 순공시간</div>
+            <div class="kpi-value">87.9<span class="kpi-unit">h</span></div>
+            <div class="kpi-sub">학생 1인 평균</div>
+          </div>
+          <div class="kpi-card purple">
+            <div class="kpi-label">총 로그인 사용자</div>
+            <div class="kpi-value">3,841<span class="kpi-unit">명</span></div>
+            <div class="kpi-sub">학생 3,271 / 학부모 570</div>
+          </div>
+          <div class="kpi-card teal">
+            <div class="kpi-label">기기 등록 수</div>
+            <div class="kpi-value">4,561<span class="kpi-unit">대</span></div>
+            <div class="kpi-sub">iOS 3,111 / Android 1,450</div>
+          </div>
+          <div class="kpi-card yellow">
+            <div class="kpi-label">인강 패스 선택</div>
+            <div class="kpi-value">5,347<span class="kpi-unit">건</span></div>
+            <div class="kpi-sub">ETOOS·메가·EBS·대성</div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-label">출결변경 신청</div>
+            <div class="kpi-value">384<span class="kpi-unit">건</span></div>
+            <div class="kpi-sub">지각 264 / 결석 120</div>
+          </div>
+          <div class="kpi-card indigo">
+            <div class="kpi-label">목표 대학 설정</div>
+            <div class="kpi-value">2,204<span class="kpi-unit">건</span></div>
+            <div class="kpi-sub">TOP1 고려대 244건</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 순공시간 ═══ -->
+      <section class="section" id="study">
+        <div class="section-title"><span class="emoji">📈</span> 순공시간 분석</div>
+        <div class="chart-grid chart-grid-2">
+          <div class="chart-card chart-full">
+            <div class="chart-card-title"><span class="dot" style="background:var(--primary)"></span> 일별 순공시간 추이 (시간)
+              &amp; 참여 학생수</div>
+            <div class="tab-btns">
+              <button class="tab-btn active" onclick="switchStudyTab('hours',this)">순공시간(h)</button>
+              <button class="tab-btn" onclick="switchStudyTab('students',this)">참여 학생수</button>
+            </div>
+            <div class="chart-wrap h300">
+              <canvas id="dailyStudyChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--secondary)"></span> 교과별 순공시간</div>
+            <div class="chart-wrap h280">
+              <canvas id="subjectStudyChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--orange)"></span> 학습 유형별 순공시간</div>
+            <div class="chart-wrap h280">
+              <canvas id="typeStudyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 지점별 ═══ -->
+      <section class="section" id="branch">
+        <div class="section-title"><span class="emoji">🏫</span> 지점별 순공시간 현황</div>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--teal)"></span> 지점별 누적 순공시간 TOP 20
+            </div>
+            <div class="chart-wrap h420">
+              <canvas id="branchChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 기기 & 로그인 ═══ -->
+      <section class="section" id="device">
+        <div class="section-title"><span class="emoji">📱</span> 기기 &amp; 로그인 현황</div>
+        <div class="chart-grid chart-grid-3">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--primary)"></span> 기기 OS 비율</div>
+            <div class="chart-wrap h250">
+              <canvas id="osChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card" style="grid-column: span 2;">
+            <div class="chart-card-title"><span class="dot" style="background:var(--purple)"></span> 기기 모델별 등록 수 TOP 10
+            </div>
+            <div class="chart-wrap h250">
+              <canvas id="modelChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card chart-full">
+            <div class="chart-card-title"><span class="dot" style="background:var(--teal)"></span> 일별 기기 등록 추이</div>
+            <div class="chart-wrap h240">
+              <canvas id="devRegDailyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 사용자 유형 ═══ -->
+      <section class="section" id="login">
+        <div class="section-title"><span class="emoji">👥</span> 사용자 유형 &amp; 일별 로그인</div>
+        <div class="chart-grid chart-grid-13">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--secondary)"></span> 학생 / 학부모 비율
+            </div>
+            <div class="chart-wrap h260">
+              <canvas id="userTypeChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--orange)"></span> 일별 신규 로그인 현황 (학생 /
+              학부모)</div>
+            <div class="chart-wrap h260">
+              <canvas id="loginDailyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 앱 다운로드 ═══ -->
+      <section class="section" id="download">
+        <div class="section-title"><span class="emoji">📲</span> 앱 다운로드 현황</div>
+        <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:20px">
+          <div class="kpi-card blue">
+            <div class="kpi-label">iOS 총 다운로드</div>
+            <div class="kpi-value">3,470<span class="kpi-unit">건</span></div>
+            <div class="kpi-sub">2026.03.03 ~ 03.31 (29일)</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label">Android 누적 설치</div>
+            <div class="kpi-value">1,470<span class="kpi-unit">대</span></div>
+            <div class="kpi-sub">최종 기준 (2026.03.28)</div>
+          </div>
+        </div>
+        <div class="chart-grid chart-grid-2">
+          <div class="chart-card chart-full">
+            <div class="chart-card-title"><span class="dot" style="background:var(--primary)"></span> iOS · Android 일별
+              다운로드 비교
+              <span style="margin-left:auto;display:flex;gap:6px" id="dlTabBtns">
+                <button class="tab-btn active" onclick="switchDlTab('all',this)">전체</button>
+                <button class="tab-btn" onclick="switchDlTab('ios',this)">iOS</button>
+                <button class="tab-btn" onclick="switchDlTab('android',this)">Android</button>
+              </span>
+            </div>
+            <div class="chart-wrap h300"><canvas id="dlCompareChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--secondary)"></span> Android 누적 설치 수
+              추이</div>
+            <div class="chart-wrap h270"><canvas id="androidCumulChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--orange)"></span> Android 일별 신규 설치 수
+            </div>
+            <div class="chart-wrap h270"><canvas id="androidNewChart"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-grid chart-grid-31" style="margin-top:20px">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--teal)"></span> 지역별 활성 사용자 TOP 10
+              <span style="margin-left:auto;display:flex;gap:6px" id="gaTabBtns">
+                <button class="tab-btn active" onclick="switchGaTab('active',this)">활성 사용자</button>
+                <button class="tab-btn" onclick="switchGaTab('users',this)">총 사용자</button>
+              </span>
+            </div>
+            <div class="chart-wrap" style="height:480px"><canvas id="gaRegionBarChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--purple)"></span> 지역별 사용자 비율</div>
+            <div class="chart-wrap" style="height:480px"><canvas id="gaRegionPieChart"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-grid" style="margin-top:20px">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--danger)"></span> 지점별 앱 다운로드 수
+              <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400">총 합계: 3,513건 · 현재
+                표시: 전체 지점</span>
+            </div>
+            <div class="chart-wrap" style="height:1300px"><canvas id="branchDlChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 페이지 조회수 ═══ -->
+      <section class="section" id="pageview">
+        <div class="section-title"><span class="emoji">📊</span> 앱 메뉴별 페이지 조회수</div>
+        <div class="chart-grid chart-grid-31">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--primary)"></span> 메뉴별 조회수 TOP 9
+            </div>
+            <div class="chart-wrap h350"><canvas id="pageViewChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--purple)"></span> 메뉴별 비율</div>
+            <div class="chart-wrap h350"><canvas id="pageViewPieChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 인강 검색 ═══ -->
+      <section class="section" id="lecture">
+        <div class="section-title"><span class="emoji">🎬</span> 인강교재 검색 현황</div>
+        <div class="chart-grid chart-grid-31">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--danger)"></span> 강좌별 검색 수 TOP 15
+            </div>
+            <div class="chart-wrap h380">
+              <canvas id="lectureChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--purple)"></span> 교과별 총 검색량</div>
+            <div class="chart-wrap h380">
+              <canvas id="subjectSearchChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 패스 선택 ═══ -->
+      <section class="section" id="pass">
+        <div class="section-title"><span class="emoji">🎫</span> 인강 패스 선택 현황</div>
+        <div class="chart-grid chart-grid-2">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--primary)"></span> 패스 종류별 선택 현황
+              (활성/비활성)</div>
+            <div class="chart-wrap h280">
+              <canvas id="passChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--teal)"></span> 일별 패스 선택 등록 수</div>
+            <div class="chart-wrap h280">
+              <canvas id="passDailyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 과목 선택 ═══ -->
+      <section class="section" id="subject">
+        <div class="section-title"><span class="emoji">📚</span> 과목 선택 현황</div>
+        <div class="chart-grid chart-grid-3">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--secondary)"></span> 교과(영역)별 선택 수
+            </div>
+            <div class="chart-wrap h300">
+              <canvas id="gyogwaChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card" style="grid-column: span 2;">
+            <div class="chart-card-title"><span class="dot" style="background:var(--orange)"></span> 세부 과목별 선택 수 TOP 15
+            </div>
+            <div class="chart-wrap h300">
+              <canvas id="subjectSelChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card chart-full">
+            <div class="chart-card-title"><span class="dot" style="background:var(--purple)"></span> 일별 과목 선택 등록 추이
+            </div>
+            <div class="chart-wrap h230">
+              <canvas id="subjectSelDailyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 출결 ═══ -->
+      <section class="section" id="attend">
+        <div class="section-title"><span class="emoji">📋</span> 출결변경 신청 현황</div>
+        <div class="chart-grid chart-grid-13">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--danger)"></span> 출결 유형별 비율</div>
+            <div class="chart-wrap h260">
+              <canvas id="attendTypeChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--orange)"></span> 일별 출결변경 신청 건수</div>
+            <div class="chart-wrap h260">
+              <canvas id="attendDailyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ 목표 대학 ═══ -->
+      <section class="section" id="univ">
+        <div class="section-title"><span class="emoji">🎓</span> 목표 대학 설정 현황</div>
+        <div class="chart-grid chart-grid-2">
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--indigo,#6366f1)"></span> 목표 대학 선택 수
+              TOP 15</div>
+            <div class="chart-wrap h380">
+              <canvas id="univChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title"><span class="dot" style="background:var(--teal)"></span> 일별 목표 대학 설정 추이</div>
+            <div class="chart-wrap h380">
+              <canvas id="univDailyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+
+  <script>
+    // ══ 플러그인 등록 & 기본값 ══
+    Chart.register(ChartDataLabels);
+    Chart.defaults.set('plugins.datalabels', { display: false });
+
+    // 재사용 datalabels 유틸
+    const DL_BAR = (fmtFn) => ({
+      display: true,
+      anchor: 'end',
+      align: 'right',
+      offset: 3,
+      clip: true,
+      formatter: (v) => {
+        const n = Number(v);
+        if (!isFinite(n) || n <= 0) return '';
+        return fmtFn ? fmtFn(v) : n.toLocaleString();
+      },
+      font: { size: 10, weight: '600', family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
+      color: '#374151'
+    });
+    const DL_STACK = {
+      display: true, anchor: 'center', align: 'center',
+      formatter: (v) => v > 0 ? v.toLocaleString() : '',
+      font: { size: 11, weight: '700', family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
+      color: '#fff'
+    };
+    const DL_DONUT = (unit) => ({
+      display: true, anchor: 'center', align: 'center',
+      formatter: (v, ctx) => {
+        if (Number(v) <= 0) return '';
+        const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+        if (!total) return '';
+        return Number(v).toLocaleString() + (unit||'') + '\n(' + (Number(v)/total*100).toFixed(1) + '%)';
+      },
+      font: { size: 9.5, weight: '700', family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
+      color: '#fff',
+      textShadowBlur: 3, textShadowColor: 'rgba(0,0,0,0.35)'
+    });
+
+    // ═══════════════════ DATA ═══════════════════
+    const DATA = { "kpi": { "total_hours": 98762.2, "total_students": 1123, "avg_hours_per_student": 87.9, "total_devices": 4561, "total_login_users": 3841, "total_pass_selections": 5347, "total_attend_changes": 384, "total_univ_targets": 2204 }, "daily_study": [{ "date": "2026-03-03", "hours": 717.1, "students": 148 }, { "date": "2026-03-04", "hours": 2321.8, "students": 332 }, { "date": "2026-03-05", "hours": 3660.3, "students": 439 }, { "date": "2026-03-06", "hours": 4063.2, "students": 444 }, { "date": "2026-03-07", "hours": 3636.9, "students": 403 }, { "date": "2026-03-08", "hours": 1501.6, "students": 218 }, { "date": "2026-03-09", "hours": 4365.8, "students": 451 }, { "date": "2026-03-10", "hours": 5149.2, "students": 473 }, { "date": "2026-03-11", "hours": 4406.1, "students": 443 }, { "date": "2026-03-12", "hours": 4664.2, "students": 438 }, { "date": "2026-03-13", "hours": 4572.8, "students": 422 }, { "date": "2026-03-14", "hours": 3293.2, "students": 354 }, { "date": "2026-03-15", "hours": 1149.0, "students": 155 }, { "date": "2026-03-16", "hours": 2636.8, "students": 305 }, { "date": "2026-03-17", "hours": 2568.4, "students": 312 }, { "date": "2026-03-18", "hours": 3672.3, "students": 389 }, { "date": "2026-03-19", "hours": 3727.6, "students": 374 }, { "date": "2026-03-20", "hours": 3630.5, "students": 368 }, { "date": "2026-03-21", "hours": 2817.6, "students": 315 }, { "date": "2026-03-22", "hours": 725.8, "students": 101 }, { "date": "2026-03-23", "hours": 3506.4, "students": 356 }, { "date": "2026-03-24", "hours": 3600.1, "students": 355 }, { "date": "2026-03-25", "hours": 3324.1, "students": 341 }, { "date": "2026-03-26", "hours": 3556.2, "students": 359 }, { "date": "2026-03-27", "hours": 3593.5, "students": 361 }, { "date": "2026-03-28", "hours": 2413.5, "students": 271 }, { "date": "2026-03-29", "hours": 943.5, "students": 132 }, { "date": "2026-03-30", "hours": 3605.1, "students": 368 }, { "date": "2026-03-31", "hours": 3704.8, "students": 370 }, { "date": "2026-04-01", "hours": 3584.2, "students": 361 }, { "date": "2026-04-02", "hours": 3650.5, "students": 378 }], "branch_study": [{ "branch": "다산", "hours": 19057.1 }, { "branch": "인천송도", "hours": 11352.6 }, { "branch": "분당정자", "hours": 10649.2 }, { "branch": "평택", "hours": 8295.0 }, { "branch": "이천기숙학원", "hours": 5278.2 }, { "branch": "인천인하대", "hours": 5258.7 }, { "branch": "의정부", "hours": 4593.9 }, { "branch": "독학기숙학원", "hours": 4585.1 }, { "branch": "인천부평", "hours": 2707.7 }, { "branch": "김포", "hours": 2447.3 }, { "branch": "서울성동", "hours": 2261.5 }, { "branch": "서울강동", "hours": 2156.9 }, { "branch": "대치", "hours": 1891.4 }, { "branch": "서울광진", "hours": 1832.2 }, { "branch": "대구수성 1관", "hours": 1812.2 }, { "branch": "광명", "hours": 1736.7 }, { "branch": "안성기숙학원", "hours": 1444.2 }, { "branch": "수원영통", "hours": 1218.8 }, { "branch": "강북", "hours": 1166.6 }, { "branch": "춘천", "hours": 1145.3 }], "subject_study": [{ "subject": "수학", "hours": 40243.9 }, { "subject": "국어", "hours": 27954.6 }, { "subject": "사회탐구", "hours": 13325.0 }, { "subject": "영어", "hours": 12832.8 }, { "subject": "과학탐구", "hours": 3983.1 }, { "subject": "한국사", "hours": 251.7 }, { "subject": "직업탐구", "hours": 103.7 }, { "subject": "제2외국어/한문", "hours": 67.4 }], "type_study": [{ "type": "자습", "hours": 73370.6 }, { "type": "인강", "hours": 22985.9 }, { "type": "단과", "hours": 1855.5 }, { "type": "실모", "hours": 550.2 }], "os_device": [{ "os": "IOS", "count": 3111 }, { "os": "ANDROID", "count": 1450 }], "device_model": [{ "model": "iPad", "count": 2444 }, { "model": "iPhone", "count": 667 }, { "model": "SM-T500", "count": 125 }, { "model": "SM-T733", "count": 85 }, { "model": "SM-X700", "count": 51 }, { "model": "SM-X800", "count": 51 }, { "model": "SM-X210", "count": 50 }, { "model": "SM-P610", "count": 47 }, { "model": "SM-X610", "count": 44 }, { "model": "SM-X510", "count": 40 }], "device_reg_daily": [{ "date": "2026-03-03", "count": 1035 }, { "date": "2026-03-04", "count": 835 }, { "date": "2026-03-05", "count": 434 }, { "date": "2026-03-06", "count": 268 }, { "date": "2026-03-07", "count": 146 }, { "date": "2026-03-08", "count": 131 }, { "date": "2026-03-09", "count": 240 }, { "date": "2026-03-10", "count": 161 }, { "date": "2026-03-11", "count": 102 }, { "date": "2026-03-12", "count": 82 }, { "date": "2026-03-13", "count": 75 }, { "date": "2026-03-14", "count": 48 }, { "date": "2026-03-15", "count": 47 }, { "date": "2026-03-16", "count": 75 }, { "date": "2026-03-17", "count": 58 }, { "date": "2026-03-18", "count": 67 }, { "date": "2026-03-19", "count": 46 }, { "date": "2026-03-20", "count": 38 }, { "date": "2026-03-21", "count": 34 }, { "date": "2026-03-22", "count": 54 }, { "date": "2026-03-23", "count": 72 }, { "date": "2026-03-24", "count": 60 }, { "date": "2026-03-25", "count": 47 }, { "date": "2026-03-26", "count": 44 }, { "date": "2026-03-27", "count": 26 }, { "date": "2026-03-28", "count": 36 }, { "date": "2026-03-29", "count": 42 }, { "date": "2026-03-30", "count": 67 }, { "date": "2026-03-31", "count": 39 }, { "date": "2026-04-01", "count": 81 }, { "date": "2026-04-02", "count": 59 }, { "date": "2026-04-03", "count": 12 }], "lecture_search": [{ "name": "강민철의 기출 분석 [독서]", "clicks": 909, "subject": "국어" }, { "name": "강민철의 기출 분석 [문학]", "clicks": 688, "subject": "국어" }, { "name": "이지영의 출제자의 눈, 개념완성", "clicks": 663, "subject": "생활과윤리" }, { "name": "[사회문화] 불후의 명강 개념완성", "clicks": 425, "subject": "생활과윤리" }, { "name": "All Of KICE [predator : 독서]", "clicks": 361, "subject": "국어" }, { "name": "이지영의 출제자의 눈, 개념완성", "clicks": 320, "subject": "사회문화" }, { "name": "개념때려잡기 수학Ⅰ ① 지수함수와 로그함수", "clicks": 319, "subject": "수학" }, { "name": "LIM IT - 생활과 윤리", "clicks": 307, "subject": "생활과윤리" }, { "name": "[문학] 훈련도감", "clicks": 305, "subject": "국어" }, { "name": "현우진의 뉴런 - 수학Ⅰ (공통)", "clicks": 305, "subject": "수학" }, { "name": "개념때려잡기 수학Ⅰ ② 삼각함수", "clicks": 276, "subject": "수학" }, { "name": "강민철의 기본1 [독서+문학]", "clicks": 270, "subject": "국어" }, { "name": "개념때려잡기 수학Ⅱ ② 미분", "clicks": 268, "subject": "수학" }, { "name": "All Of KICE [predator : 문학]", "clicks": 259, "subject": "국어" }, { "name": "LIM IT - 사회문화", "clicks": 238, "subject": "사회문화" }], "subject_search": [{ "subject": "국어", "clicks": 6306 }, { "subject": "수학", "clicks": 5350 }, { "subject": "영어", "clicks": 2625 }, { "subject": "생활과윤리", "clicks": 2097 }, { "subject": "확률과통계", "clicks": 1373 }, { "subject": "사회문화", "clicks": 967 }, { "subject": "미적분", "clicks": 924 }, { "subject": "언어와매체", "clicks": 755 }, { "subject": "한국지리", "clicks": 471 }, { "subject": "화법과작문", "clicks": 451 }, { "subject": "세계지리", "clicks": 376 }, { "subject": "윤리와사상", "clicks": 354 }, { "subject": "생명과학I", "clicks": 265 }, { "subject": "지구과학I", "clicks": 239 }, { "subject": "한국사", "clicks": 179 }], "pass_selection": [{ "pass": "ETOOS", "active": 1373, "total": 1695, "inactive": 322 }, { "pass": "메가스터디", "active": 1301, "total": 1617, "inactive": 316 }, { "pass": "EBS", "active": 527, "total": 781, "inactive": 254 }, { "pass": "대성 마이맥", "active": 933, "total": 1254, "inactive": 321 }], "pass_daily": [{ "date": "2026-03-03", "count": 940 }, { "date": "2026-03-04", "count": 972 }, { "date": "2026-03-05", "count": 563 }, { "date": "2026-03-06", "count": 398 }, { "date": "2026-03-07", "count": 208 }, { "date": "2026-03-08", "count": 98 }, { "date": "2026-03-09", "count": 204 }, { "date": "2026-03-10", "count": 203 }, { "date": "2026-03-11", "count": 116 }, { "date": "2026-03-12", "count": 87 }, { "date": "2026-03-13", "count": 85 }, { "date": "2026-03-14", "count": 47 }, { "date": "2026-03-15", "count": 42 }, { "date": "2026-03-16", "count": 100 }, { "date": "2026-03-17", "count": 60 }, { "date": "2026-03-18", "count": 74 }, { "date": "2026-03-19", "count": 51 }, { "date": "2026-03-20", "count": 45 }, { "date": "2026-03-21", "count": 30 }, { "date": "2026-03-22", "count": 27 }, { "date": "2026-03-23", "count": 64 }, { "date": "2026-03-24", "count": 40 }, { "date": "2026-03-25", "count": 53 }, { "date": "2026-03-26", "count": 86 }, { "date": "2026-03-27", "count": 85 }, { "date": "2026-03-28", "count": 128 }, { "date": "2026-03-29", "count": 233 }, { "date": "2026-03-30", "count": 81 }, { "date": "2026-03-31", "count": 74 }, { "date": "2026-04-01", "count": 85 }, { "date": "2026-04-02", "count": 61 }, { "date": "2026-04-03", "count": 7 }], "subject_selection": [{ "subject": "화법과작문", "count": 1443 }, { "subject": "확률과통계", "count": 1407 }, { "subject": "사회문화", "count": 1352 }, { "subject": "생활과윤리", "count": 1037 }, { "subject": "언어와매체", "count": 857 }, { "subject": "미적분", "count": 778 }, { "subject": "지구과학I", "count": 385 }, { "subject": "윤리와사상", "count": 300 }, { "subject": "세계지리", "count": 292 }, { "subject": "생명과학I", "count": 281 }, { "subject": "한국지리", "count": 270 }, { "subject": "정치와법", "count": 143 }, { "subject": "동아시아사", "count": 113 }, { "subject": "물리학I", "count": 103 }, { "subject": "일본어I", "count": 86 }], "gyogwa_selection": [{ "gyogwa": "사회탐구", "count": 3617 }, { "gyogwa": "국어", "count": 2300 }, { "gyogwa": "수학", "count": 2263 }, { "gyogwa": "과학탐구", "count": 917 }, { "gyogwa": "제2외국어/한문", "count": 285 }, { "gyogwa": "직업탐구", "count": 19 }], "subject_sel_daily": [{ "date": "2026-03-03", "count": 1348 }, { "date": "2026-03-04", "count": 1195 }, { "date": "2026-03-05", "count": 793 }, { "date": "2026-03-06", "count": 888 }, { "date": "2026-03-07", "count": 413 }, { "date": "2026-03-08", "count": 333 }, { "date": "2026-03-09", "count": 412 }, { "date": "2026-03-10", "count": 313 }, { "date": "2026-03-11", "count": 285 }, { "date": "2026-03-12", "count": 166 }, { "date": "2026-03-13", "count": 207 }, { "date": "2026-03-14", "count": 137 }, { "date": "2026-03-15", "count": 95 }, { "date": "2026-03-16", "count": 140 }, { "date": "2026-03-17", "count": 153 }, { "date": "2026-03-18", "count": 116 }, { "date": "2026-03-19", "count": 129 }, { "date": "2026-03-20", "count": 414 }, { "date": "2026-03-21", "count": 105 }, { "date": "2026-03-22", "count": 44 }, { "date": "2026-03-23", "count": 130 }, { "date": "2026-03-24", "count": 95 }, { "date": "2026-03-25", "count": 116 }, { "date": "2026-03-26", "count": 148 }, { "date": "2026-03-27", "count": 199 }, { "date": "2026-03-28", "count": 198 }, { "date": "2026-03-29", "count": 149 }, { "date": "2026-03-30", "count": 129 }, { "date": "2026-03-31", "count": 194 }, { "date": "2026-04-01", "count": 217 }, { "date": "2026-04-02", "count": 110 }, { "date": "2026-04-03", "count": 30 }], "user_type": [{ "type": "GUARDIAN", "count": 570 }, { "type": "STUDENT", "count": 3271 }], "login_daily": [{ "date": "2026-03-03", "student": 934, "guardian": 195 }, { "date": "2026-03-04", "student": 683, "guardian": 93 }, { "date": "2026-03-05", "student": 348, "guardian": 34 }, { "date": "2026-03-06", "student": 212, "guardian": 19 }, { "date": "2026-03-07", "student": 103, "guardian": 25 }, { "date": "2026-03-08", "student": 70, "guardian": 25 }, { "date": "2026-03-09", "student": 167, "guardian": 28 }, { "date": "2026-03-10", "student": 115, "guardian": 4 }, { "date": "2026-03-11", "student": 60, "guardian": 8 }, { "date": "2026-03-12", "student": 43, "guardian": 6 }, { "date": "2026-03-13", "student": 43, "guardian": 5 }, { "date": "2026-03-14", "student": 23, "guardian": 3 }, { "date": "2026-03-15", "student": 15, "guardian": 7 }, { "date": "2026-03-16", "student": 44, "guardian": 9 }, { "date": "2026-03-17", "student": 33, "guardian": 7 }, { "date": "2026-03-18", "student": 34, "guardian": 8 }, { "date": "2026-03-19", "student": 14, "guardian": 4 }, { "date": "2026-03-20", "student": 13, "guardian": 2 }, { "date": "2026-03-21", "student": 12, "guardian": 5 }, { "date": "2026-03-22", "student": 23, "guardian": 6 }, { "date": "2026-03-23", "student": 35, "guardian": 6 }, { "date": "2026-03-24", "student": 23, "guardian": 4 }, { "date": "2026-03-25", "student": 18, "guardian": 6 }, { "date": "2026-03-26", "student": 21, "guardian": 10 }, { "date": "2026-03-27", "student": 16, "guardian": 5 }, { "date": "2026-03-28", "student": 14, "guardian": 5 }, { "date": "2026-03-29", "student": 15, "guardian": 10 }, { "date": "2026-03-30", "student": 36, "guardian": 7 }, { "date": "2026-03-31", "student": 13, "guardian": 8 }, { "date": "2026-04-01", "student": 54, "guardian": 8 }, { "date": "2026-04-02", "student": 29, "guardian": 5 }], "attend_type": [{ "type": "지각", "count": 264 }, { "type": "결석", "count": 120 }], "attend_daily": [{ "date": "2026-03-03", "count": 17 }, { "date": "2026-03-04", "count": 6 }, { "date": "2026-03-05", "count": 17 }, { "date": "2026-03-06", "count": 14 }, { "date": "2026-03-07", "count": 18 }, { "date": "2026-03-08", "count": 4 }, { "date": "2026-03-09", "count": 9 }, { "date": "2026-03-10", "count": 8 }, { "date": "2026-03-11", "count": 11 }, { "date": "2026-03-12", "count": 15 }, { "date": "2026-03-13", "count": 16 }, { "date": "2026-03-14", "count": 11 }, { "date": "2026-03-15", "count": 9 }, { "date": "2026-03-16", "count": 19 }, { "date": "2026-03-17", "count": 3 }, { "date": "2026-03-18", "count": 18 }, { "date": "2026-03-19", "count": 19 }, { "date": "2026-03-20", "count": 17 }, { "date": "2026-03-21", "count": 11 }, { "date": "2026-03-22", "count": 4 }, { "date": "2026-03-23", "count": 11 }, { "date": "2026-03-24", "count": 17 }, { "date": "2026-03-25", "count": 17 }, { "date": "2026-03-26", "count": 8 }, { "date": "2026-03-27", "count": 19 }, { "date": "2026-03-28", "count": 19 }, { "date": "2026-03-29", "count": 12 }, { "date": "2026-03-30", "count": 21 }, { "date": "2026-03-31", "count": 14 }], "target_univ": [{ "univ": "고려대학교", "count": 244 }, { "univ": "연세대학교", "count": 243 }, { "univ": "서울대학교", "count": 199 }, { "univ": "경희대학교", "count": 169 }, { "univ": "성균관대학교", "count": 151 }, { "univ": "건국대학교", "count": 146 }, { "univ": "중앙대학교", "count": 131 }, { "univ": "한양대학교", "count": 127 }, { "univ": "이화여자대학교", "count": 92 }, { "univ": "홍익대학교", "count": 63 }, { "univ": "서강대학교", "count": 43 }, { "univ": "인하대학교", "count": 40 }, { "univ": "국민대학교", "count": 39 }, { "univ": "서울시립대학교", "count": 34 }, { "univ": "동국대학교", "count": 33 }], "univ_daily": [{ "date": "2026-03-03", "count": 337 }, { "date": "2026-03-04", "count": 351 }, { "date": "2026-03-05", "count": 206 }, { "date": "2026-03-06", "count": 168 }, { "date": "2026-03-07", "count": 86 }, { "date": "2026-03-08", "count": 53 }, { "date": "2026-03-09", "count": 92 }, { "date": "2026-03-10", "count": 85 }, { "date": "2026-03-11", "count": 46 }, { "date": "2026-03-12", "count": 34 }, { "date": "2026-03-13", "count": 24 }, { "date": "2026-03-14", "count": 23 }, { "date": "2026-03-15", "count": 15 }, { "date": "2026-03-16", "count": 36 }, { "date": "2026-03-17", "count": 14 }, { "date": "2026-03-18", "count": 21 }, { "date": "2026-03-19", "count": 25 }, { "date": "2026-03-20", "count": 13 }, { "date": "2026-03-21", "count": 11 }, { "date": "2026-03-22", "count": 12 }, { "date": "2026-03-23", "count": 14 }, { "date": "2026-03-24", "count": 20 }, { "date": "2026-03-25", "count": 17 }, { "date": "2026-03-26", "count": 24 }, { "date": "2026-03-27", "count": 45 }, { "date": "2026-03-28", "count": 68 }, { "date": "2026-03-29", "count": 260 }, { "date": "2026-03-30", "count": 34 }, { "date": "2026-03-31", "count": 18 }, { "date": "2026-04-01", "count": 38 }, { "date": "2026-04-02", "count": 12 }, { "date": "2026-04-03", "count": 2 }], "ios_daily_dl": [{ "date": "2026-03-03", "count": 780 }, { "date": "2026-03-04", "count": 657 }, { "date": "2026-03-05", "count": 275 }, { "date": "2026-03-06", "count": 211 }, { "date": "2026-03-07", "count": 116 }, { "date": "2026-03-08", "count": 89 }, { "date": "2026-03-09", "count": 158 }, { "date": "2026-03-10", "count": 122 }, { "date": "2026-03-11", "count": 96 }, { "date": "2026-03-12", "count": 62 }, { "date": "2026-03-13", "count": 62 }, { "date": "2026-03-14", "count": 41 }, { "date": "2026-03-15", "count": 51 }, { "date": "2026-03-16", "count": 68 }, { "date": "2026-03-17", "count": 52 }, { "date": "2026-03-18", "count": 52 }, { "date": "2026-03-19", "count": 38 }, { "date": "2026-03-20", "count": 38 }, { "date": "2026-03-21", "count": 39 }, { "date": "2026-03-22", "count": 63 }, { "date": "2026-03-23", "count": 65 }, { "date": "2026-03-24", "count": 54 }, { "date": "2026-03-25", "count": 29 }, { "date": "2026-03-26", "count": 42 }, { "date": "2026-03-27", "count": 21 }, { "date": "2026-03-28", "count": 27 }, { "date": "2026-03-29", "count": 42 }, { "date": "2026-03-30", "count": 55 }, { "date": "2026-03-31", "count": 65 }], "android_cumulative": [{ "date": "2026-03-05", "count": 905 }, { "date": "2026-03-06", "count": 960 }, { "date": "2026-03-07", "count": 990 }, { "date": "2026-03-08", "count": 1060 }, { "date": "2026-03-09", "count": 1120 }, { "date": "2026-03-10", "count": 1150 }, { "date": "2026-03-11", "count": 1170 }, { "date": "2026-03-12", "count": 1190 }, { "date": "2026-03-13", "count": 1210 }, { "date": "2026-03-14", "count": 1220 }, { "date": "2026-03-15", "count": 1240 }, { "date": "2026-03-16", "count": 1270 }, { "date": "2026-03-17", "count": 1290 }, { "date": "2026-03-18", "count": 1300 }, { "date": "2026-03-19", "count": 1320 }, { "date": "2026-03-20", "count": 1330 }, { "date": "2026-03-21", "count": 1340 }, { "date": "2026-03-22", "count": 1370 }, { "date": "2026-03-23", "count": 1400 }, { "date": "2026-03-24", "count": 1410 }, { "date": "2026-03-25", "count": 1430 }, { "date": "2026-03-26", "count": 1450 }, { "date": "2026-03-27", "count": 1460 }, { "date": "2026-03-28", "count": 1470 }], "android_daily_new": [{ "date": "2026-03-06", "count": 55 }, { "date": "2026-03-07", "count": 30 }, { "date": "2026-03-08", "count": 70 }, { "date": "2026-03-09", "count": 60 }, { "date": "2026-03-10", "count": 30 }, { "date": "2026-03-11", "count": 20 }, { "date": "2026-03-12", "count": 20 }, { "date": "2026-03-13", "count": 20 }, { "date": "2026-03-14", "count": 10 }, { "date": "2026-03-15", "count": 20 }, { "date": "2026-03-16", "count": 30 }, { "date": "2026-03-17", "count": 20 }, { "date": "2026-03-18", "count": 10 }, { "date": "2026-03-19", "count": 20 }, { "date": "2026-03-20", "count": 10 }, { "date": "2026-03-21", "count": 10 }, { "date": "2026-03-22", "count": 30 }, { "date": "2026-03-23", "count": 30 }, { "date": "2026-03-24", "count": 10 }, { "date": "2026-03-25", "count": 20 }, { "date": "2026-03-26", "count": 20 }, { "date": "2026-03-27", "count": 10 }, { "date": "2026-03-28", "count": 10 }], "page_views": [{ "menu": "대시보드", "path": "/home", "views": 125582, "ratio": 28.35 }, { "menu": "나만의시간표", "path": "/planner", "views": 80846, "ratio": 18.25 }, { "menu": "내정보", "path": "/my-profile", "views": 64797, "ratio": 14.63 }, { "menu": "기타", "path": "/", "views": 58933, "ratio": 13.30 }, { "menu": "리포트", "path": "/report", "views": 28002, "ratio": 6.32 }, { "menu": "공지사항", "path": "/courses", "views": 20144, "ratio": 4.55 }, { "menu": "매리트", "path": "/merit", "views": 19627, "ratio": 4.43 }, { "menu": "질문예약", "path": "/guest-reservation", "views": 17069, "ratio": 3.85 }, { "menu": "출결변경신청", "path": "/attendance", "views": 7757, "ratio": 1.75 }], "ga_region": [{ "region": "서울", "active": 3025, "ratio_active": 49.46, "users": 2521, "ratio_users": 41.27 }, { "region": "성남시", "active": 637, "ratio_active": 10.42, "users": 350, "ratio_users": 5.73 }, { "region": "부산", "active": 474, "ratio_active": 7.75, "users": 316, "ratio_users": 5.17 }, { "region": "안성시", "active": 370, "ratio_active": 6.05, "users": 332, "ratio_users": 5.44 }, { "region": "광주시", "active": 326, "ratio_active": 5.33, "users": 302, "ratio_users": 4.94 }, { "region": "인천", "active": 315, "ratio_active": 5.15, "users": 227, "ratio_users": 3.72 }, { "region": "이천시", "active": 282, "ratio_active": 4.61, "users": 236, "ratio_users": 3.86 }, { "region": "대구", "active": 266, "ratio_active": 4.35, "users": 182, "ratio_users": 2.98 }, { "region": "남양주시", "active": 243, "ratio_active": 3.97, "users": 156, "ratio_users": 2.55 }, { "region": "수원시", "active": 197, "ratio_active": 3.22, "users": 149, "ratio_users": 2.44 }], "branch_downloads": [{ "branch": "이천기숙학원", "count": 374 }, { "branch": "안성기숙학원", "count": 308 }, { "branch": "독학기숙학원", "count": 284 }, { "branch": "대치", "count": 190 }, { "branch": "분당정자", "count": 177 }, { "branch": "강북", "count": 85 }, { "branch": "목동", "count": 84 }, { "branch": "서울성북", "count": 81 }, { "branch": "서울성동", "count": 77 }, { "branch": "마포", "count": 75 }, { "branch": "인천송도", "count": 71 }, { "branch": "부산교대", "count": 71 }, { "branch": "서울송파", "count": 69 }, { "branch": "평택", "count": 69 }, { "branch": "은평서대문", "count": 68 }, { "branch": "서울광진", "count": 66 }, { "branch": "의정부", "count": 62 }, { "branch": "수원정자", "count": 61 }, { "branch": "광주수원", "count": 51 }, { "branch": "일산동구", "count": 49 }, { "branch": "대구달서", "count": 49 }, { "branch": "수원시청", "count": 46 }, { "branch": "일산서구", "count": 43 }, { "branch": "대구수성1관", "count": 43 }, { "branch": "동탄", "count": 40 }, { "branch": "천안", "count": 38 }, { "branch": "인천부평", "count": 38 }, { "branch": "부산서면", "count": 35 }, { "branch": "목포", "count": 34 }, { "branch": "김포", "count": 34 }, { "branch": "광주북구", "count": 33 }, { "branch": "광명", "count": 31 }, { "branch": "수원영통", "count": 31 }, { "branch": "노량진", "count": 31 }, { "branch": "대구수성2관", "count": 30 }, { "branch": "인천인하대", "count": 30 }, { "branch": "울산수지", "count": 29 }, { "branch": "부산해운대", "count": 29 }, { "branch": "진주", "count": 27 }, { "branch": "서울강동", "count": 27 }, { "branch": "광주동구", "count": 25 }, { "branch": "서울도봉", "count": 25 }, { "branch": "서울대입구", "count": 24 }, { "branch": "춘천", "count": 24 }, { "branch": "광주남구", "count": 22 }, { "branch": "하남", "count": 19 }, { "branch": "울산남구", "count": 19 }, { "branch": "서울강서", "count": 19 }, { "branch": "서울관악", "count": 19 }, { "branch": "서울특별구", "count": 15 }, { "branch": "파주", "count": 15 }, { "branch": "부천", "count": 13 }, { "branch": "원주", "count": 11 }, { "branch": "청주", "count": 10 }, { "branch": "부산대", "count": 10 }, { "branch": "안산", "count": 9 }, { "branch": "목동오목교", "count": 7 }, { "branch": "이투스247본원", "count": 4 }, { "branch": "창원", "count": 3 }, { "branch": "제주", "count": 2 }, { "branch": "구리남양주", "count": 2 }, { "branch": "광주동구2관", "count": 1 }, { "branch": "성남서원", "count": 1 }, { "branch": "이투스247", "count": 1 }, { "branch": "익산", "count": 1 }, { "branch": "전주완산", "count": 1 }] };
+
+    // 지점별 앱 다운로드 수(오류 수정 반영)
+    DATA.branch_downloads = [
+      { "branch": "이천기숙학원", "count": 374 },
+      { "branch": "안성기숙학원", "count": 308 },
+      { "branch": "독학기숙학원", "count": 284 },
+      { "branch": "대치", "count": 190 },
+      { "branch": "분당정자", "count": 177 },
+      { "branch": "다산", "count": 101 },
+      { "branch": "강북", "count": 85 },
+      { "branch": "목동", "count": 84 },
+      { "branch": "서울성북", "count": 81 },
+      { "branch": "서울성동", "count": 77 },
+      { "branch": "마포", "count": 75 },
+      { "branch": "인천송도", "count": 71 },
+      { "branch": "부산교대", "count": 71 },
+      { "branch": "서울송파", "count": 69 },
+      { "branch": "평택", "count": 69 },
+      { "branch": "은평서대문", "count": 68 },
+      { "branch": "서울광진", "count": 66 },
+      { "branch": "의정부", "count": 62 },
+      { "branch": "수원정자", "count": 61 },
+      { "branch": "광주수완", "count": 51 },
+      { "branch": "일산동구", "count": 49 },
+      { "branch": "대구달서", "count": 46 },
+      { "branch": "수원시청", "count": 46 },
+      { "branch": "일산서구", "count": 43 },
+      { "branch": "대구수성 1관", "count": 43 },
+      { "branch": "동탄", "count": 40 },
+      { "branch": "천안", "count": 38 },
+      { "branch": "인천부평", "count": 38 },
+      { "branch": "대전둔산", "count": 36 },
+      { "branch": "부산서면", "count": 35 },
+      { "branch": "목포", "count": 34 },
+      { "branch": "김포", "count": 34 },
+      { "branch": "인천청라", "count": 33 },
+      { "branch": "광주북구", "count": 31 },
+      { "branch": "광명", "count": 31 },
+      { "branch": "수원영통", "count": 31 },
+      { "branch": "노량진", "count": 30 },
+      { "branch": "대구수성 2관", "count": 30 },
+      { "branch": "인천인하대", "count": 30 },
+      { "branch": "용인수지", "count": 29 },
+      { "branch": "부산해운대", "count": 29 },
+      { "branch": "진주", "count": 27 },
+      { "branch": "서울강동", "count": 27 },
+      { "branch": "광주동구", "count": 25 },
+      { "branch": "서울도봉", "count": 25 },
+      { "branch": "서울대점", "count": 24 },
+      { "branch": "춘천", "count": 24 },
+      { "branch": "광주남구", "count": 22 },
+      { "branch": "하남", "count": 19 },
+      { "branch": "울산남구", "count": 19 },
+      { "branch": "서울강서", "count": 19 },
+      { "branch": "부산북구", "count": 17 },
+      { "branch": "파주", "count": 15 },
+      { "branch": "부천", "count": 13 },
+      { "branch": "원주", "count": 11 },
+      { "branch": "청주", "count": 10 },
+      { "branch": "부산대", "count": 10 },
+      { "branch": "안산", "count": 7 },
+      { "branch": "목동오목교", "count": 7 },
+      { "branch": "창원", "count": 3 },
+      { "branch": "제주", "count": 3 },
+      { "branch": "구리남양주", "count": 2 },
+      { "branch": "광주동구(남)", "count": 1 },
+      { "branch": "서울노원", "count": 1 },
+      { "branch": "익산", "count": 1 },
+      { "branch": "전주완산", "count": 1 }
+    ];
+    // ═══════════════════ HELPERS ═══════════════════
+    const COLORS = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#9b59b6', '#e67e22', '#1abc9c', '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#8e44ad', '#16a085', '#d35400', '#c0392b', '#2980b9', '#27ae60'];
+    const COLORS_ALPHA = (c, a) => c + Math.round(a * 255).toString(16).padStart(2, '0');
+    const fmtDate = d => d.replace('2026-', '').replace('-', '/');
+    const defaults = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 11 }, padding: 10 } },
+        tooltip: {
+          titleFont: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 12 },
+          bodyFont: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 11 }
+        }
+      },
+      scales: {}
+    };
+    const scaleDefaults = {
+      grid: { color: 'rgba(0,0,0,.05)' },
+      ticks: { font: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 11 } }
+    };
+
+    function lineDefaults(color, fill = true) {
+      return {
+        borderColor: color, backgroundColor: fill ? color + '22' : 'transparent', borderWidth: 2,
+        pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill
+      };
+    }
+
+    // v3 full: start~end 기준 날짜 정렬/누락일 0 채움
+    const RANGE_START = '2026-03-03';
+    const RANGE_END = '2026-04-03';
+    function buildDateRangeISO(startStr, endStr) {
+      const [sy, sm, sd] = startStr.split('-').map(Number);
+      const [ey, em, ed] = endStr.split('-').map(Number);
+      const s = new Date(sy, sm - 1, sd);
+      const e = new Date(ey, em - 1, ed);
+      const out = [];
+      for (let cur = new Date(s.getTime()); cur <= e; cur.setDate(cur.getDate() + 1)) {
+        const y = cur.getFullYear();
+        const m = String(cur.getMonth() + 1).padStart(2, '0');
+        const d = String(cur.getDate()).padStart(2, '0');
+        out.push(`${y}-${m}-${d}`);
+      }
+      return out;
+    }
+    const ALL_DATES = buildDateRangeISO(RANGE_START, RANGE_END);
+    const ALL_LABELS = ALL_DATES.map(d => fmtDate(d));
+    function alignToRange(series, dateKey, valueKey, fill = 0) {
+      const map = new Map(series.map(x => [x[dateKey], x[valueKey]]));
+      return ALL_DATES.map(d => (map.has(d) ? map.get(d) : fill));
+    }
+    function tickEveryOther(value, index) {
+      return index % 2 === 0 ? value : '';
+    }
+
+    // ═══════════════════ CHARTS ═══════════════════
+
+    // 1. Daily Study (switchable)
+    const dailyLabels = ALL_LABELS;
+    let dailyStudyChart = new Chart(document.getElementById('dailyStudyChart'), {
+      type: 'line',
+      data: {
+        labels: dailyLabels,
+        datasets: [{
+          label: '순공시간(h)',
+          data: alignToRange(DATA.daily_study, 'date', 'hours', 0),
+          ...lineDefaults('#1a73e8'),
+        }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, minRotation: 30, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    function switchStudyTab(mode, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (mode === 'hours') {
+        dailyStudyChart.data.datasets[0].label = '순공시간(h)';
+        dailyStudyChart.data.datasets[0].data = alignToRange(DATA.daily_study, 'date', 'hours', 0);
+        dailyStudyChart.data.datasets[0].borderColor = '#1a73e8';
+        dailyStudyChart.data.datasets[0].backgroundColor = '#1a73e822';
+      } else {
+        dailyStudyChart.data.datasets[0].label = '참여 학생수(명)';
+        dailyStudyChart.data.datasets[0].data = alignToRange(DATA.daily_study, 'date', 'students', 0);
+        dailyStudyChart.data.datasets[0].borderColor = '#34a853';
+        dailyStudyChart.data.datasets[0].backgroundColor = '#34a85322';
+      }
+      dailyStudyChart.update();
+    }
+
+    // 2. Subject Study (Doughnut) ★datalabels
+    new Chart(document.getElementById('subjectStudyChart'), {
+      type: 'doughnut',
+      data: {
+        labels: DATA.subject_study.map(d => d.subject),
+        datasets: [{ data: DATA.subject_study.map(d => d.hours), backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, cutout: '55%',
+        plugins: {
+          ...defaults.plugins, legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}h` } },
+          datalabels: DL_DONUT('h')
+        }
+      }
+    });
+
+    // 3. Type Study (Polar)
+    new Chart(document.getElementById('typeStudyChart'), {
+      type: 'polarArea',
+      data: {
+        labels: DATA.type_study.map(d => d.type),
+        datasets: [{ data: DATA.type_study.map(d => d.hours), backgroundColor: ['#1a73e888', '#34a85388', '#fbbc0488', '#ea433588'], borderColor: COLORS, borderWidth: 2 }]
+      },
+      options: {
+        ...defaults,
+        plugins: {
+          ...defaults.plugins, legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.r.toLocaleString()}h` } }
+        },
+        scales: { r: { grid: { color: 'rgba(0,0,0,.07)' }, ticks: { font: { size: 10 } } } }
+      }
+    });
+
+    // 4. Branch (Horizontal Bar) ★datalabels
+    new Chart(document.getElementById('branchChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.branch_study.map(d => d.branch),
+        datasets: [{
+          label: '순공시간(h)', data: DATA.branch_study.map(d => d.hours),
+          backgroundColor: DATA.branch_study.map((_, i) => COLORS[i % COLORS.length] + 'cc'),
+          borderColor: DATA.branch_study.map((_, i) => COLORS[i % COLORS.length]),
+          borderWidth: 1, borderRadius: 4
+        }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 65 } },
+        plugins: { ...defaults.plugins, legend: { display: false }, datalabels: DL_BAR(v => v.toLocaleString() + 'h') },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { size: 11 } } } }
+      }
+    });
+
+    // 5. OS Pie
+    new Chart(document.getElementById('osChart'), {
+      type: 'pie',
+      data: {
+        labels: DATA.os_device.map(d => d.os),
+        datasets: [{ data: DATA.os_device.map(d => d.count), backgroundColor: ['#1a73e8cc', '#34a853cc'], borderWidth: 3, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, plugins: {
+          ...defaults.plugins, legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}대 (${(c.parsed / DATA.kpi.total_devices * 100).toFixed(1)}%)` } }
+        }
+      }
+    });
+
+    // 6. Device Model (Bar)
+    new Chart(document.getElementById('modelChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.device_model.map(d => d.model),
+        datasets: [{
+          label: '등록수', data: DATA.device_model.map(d => d.count),
+          backgroundColor: COLORS.map(c => c + 'cc'), borderColor: COLORS, borderWidth: 1, borderRadius: 4
+        }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 7. Device Reg Daily
+    new Chart(document.getElementById('devRegDailyChart'), {
+      type: 'line',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{
+          label: '기기 등록 수', data: alignToRange(DATA.device_reg_daily, 'date', 'count', 0),
+          ...lineDefaults('#9b59b6'), fill: true
+        }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 8. User Type Doughnut
+    new Chart(document.getElementById('userTypeChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['학생(STUDENT)', '학부모(GUARDIAN)'],
+        datasets: [{ data: [3271, 570], backgroundColor: ['#1a73e8cc', '#34a853cc'], borderWidth: 3, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, cutout: '60%',
+        plugins: {
+          ...defaults.plugins, legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}명 (${(c.parsed / DATA.kpi.total_login_users * 100).toFixed(1)}%)` } }
+        }
+      }
+    });
+
+    // 9. Login Daily
+    new Chart(document.getElementById('loginDailyChart'), {
+      type: 'bar',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [
+          { label: '학생', data: alignToRange(DATA.login_daily, 'date', 'student', 0), backgroundColor: '#1a73e8bb', borderRadius: 2 },
+          { label: '학부모', data: alignToRange(DATA.login_daily, 'date', 'guardian', 0), backgroundColor: '#34a853bb', borderRadius: 2 }
+        ]
+      },
+      options: { ...defaults, scales: { x: { ...scaleDefaults, stacked: true, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults, stacked: true } } }
+    });
+
+    // 10. Lecture Search (Horizontal Bar) ★datalabels
+    new Chart(document.getElementById('lectureChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.lecture_search.map(d => d.name),
+        datasets: [{
+          label: '검색수', data: DATA.lecture_search.map(d => d.clicks),
+          backgroundColor: DATA.lecture_search.map(d => {
+            const c = { '국어': '#1a73e8', '수학': '#ea4335', '영어': '#34a853', '생활과윤리': '#9b59b6', '사회문화': '#e67e22' };
+            return (c[d.subject] || '#aaa') + 'cc';
+          }),
+          borderRadius: 3, borderWidth: 0
+        }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 50 } },
+        plugins: {
+          ...defaults.plugins, legend: { display: false },
+          tooltip: { callbacks: { label: (c) => ` ${c.parsed.x.toLocaleString()}회` } },
+          datalabels: DL_BAR(v => v.toLocaleString() + '회')
+        },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { size: 10.5 } } } }
+      }
+    });
+
+    // 11. Subject Search (Bar) ★datalabels
+    new Chart(document.getElementById('subjectSearchChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.subject_search.slice(0, 15).map(d => d.subject),
+        datasets: [{
+          label: '검색수', data: DATA.subject_search.slice(0, 15).map(d => d.clicks),
+          backgroundColor: COLORS.map(c => c + 'cc'), borderRadius: 3, borderWidth: 0
+        }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 60 } },
+        plugins: { ...defaults.plugins, legend: { display: false }, datalabels: DL_BAR(v => v.toLocaleString() + '회') },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { size: 11 } } } }
+      }
+    });
+
+    // 12. Pass Selection (Stacked Bar) ★datalabels
+    new Chart(document.getElementById('passChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.pass_selection.map(d => d.pass),
+        datasets: [
+          { label: '활성', data: DATA.pass_selection.map(d => d.active), backgroundColor: '#1a73e8bb', borderRadius: 0 },
+          { label: '비활성', data: DATA.pass_selection.map(d => d.inactive), backgroundColor: '#ea4335bb', borderRadius: 0 }
+        ]
+      },
+      options: {
+        ...defaults,
+        plugins: { ...defaults.plugins, datalabels: DL_STACK },
+        scales: { x: { ...scaleDefaults, stacked: true }, y: { ...scaleDefaults, stacked: true } }
+      }
+    });
+
+    // 13. Pass Daily
+    new Chart(document.getElementById('passDailyChart'), {
+      type: 'line',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{ label: '패스 등록', data: alignToRange(DATA.pass_daily, 'date', 'count', 0), ...lineDefaults('#1abc9c') }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 14. Gyogwa Selection (Doughnut) ★datalabels
+    new Chart(document.getElementById('gyogwaChart'), {
+      type: 'doughnut',
+      data: {
+        labels: DATA.gyogwa_selection.map(d => d.gyogwa),
+        datasets: [{ data: DATA.gyogwa_selection.map(d => d.count), backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, cutout: '50%',
+        plugins: {
+          ...defaults.plugins, legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 6 } },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}건` } },
+          datalabels: DL_DONUT('건')
+        }
+      }
+    });
+
+    // 15. Subject Selection (Horizontal Bar) ★datalabels
+    new Chart(document.getElementById('subjectSelChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.subject_selection.map(d => d.subject),
+        datasets: [{
+          label: '선택수', data: DATA.subject_selection.map(d => d.count),
+          backgroundColor: COLORS.map(c => c + 'bb'), borderRadius: 3, borderWidth: 0
+        }]
+      },
+      options: {
+        ...defaults,
+        layout: { padding: { right: 50 } },
+        plugins: { ...defaults.plugins, legend: { display: false }, datalabels: DL_BAR(v => v.toLocaleString() + '건') },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 16. Subject Sel Daily
+    new Chart(document.getElementById('subjectSelDailyChart'), {
+      type: 'line',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{ label: '과목 선택 수', data: alignToRange(DATA.subject_sel_daily, 'date', 'count', 0), ...lineDefaults('#e67e22') }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 17. Attend Type Pie
+    new Chart(document.getElementById('attendTypeChart'), {
+      type: 'pie',
+      data: {
+        labels: DATA.attend_type.map(d => d.type),
+        datasets: [{ data: DATA.attend_type.map(d => d.count), backgroundColor: ['#fbbc04cc', '#ea4335cc'], borderWidth: 3, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, plugins: {
+          ...defaults.plugins, legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}건 (${(c.parsed / DATA.kpi.total_attend_changes * 100).toFixed(1)}%)` } }
+        }
+      }
+    });
+
+    // 18. Attend Daily
+    new Chart(document.getElementById('attendDailyChart'), {
+      type: 'bar',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{ label: '신청 건수', data: alignToRange(DATA.attend_daily, 'date', 'count', 0), backgroundColor: '#fbbc04bb', borderRadius: 3 }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 19. Target Univ (Horizontal Bar) ★datalabels
+    new Chart(document.getElementById('univChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.target_univ.map(d => d.univ),
+        datasets: [{
+          label: '선택수', data: DATA.target_univ.map(d => d.count),
+          backgroundColor: DATA.target_univ.map((_, i) => ['#1a73e8', '#ea4335', '#34a853', '#fbbc04', '#9b59b6', '#e67e22', '#1abc9c', '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#8e44ad', '#16a085', '#d35400', '#c0392b'][i] + 'cc'),
+          borderRadius: 4, borderWidth: 0
+        }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 45 } },
+        plugins: { ...defaults.plugins, legend: { display: false }, datalabels: DL_BAR(v => v.toLocaleString() + '건') },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { size: 11.5 } } } }
+      }
+    });
+
+    // 20. Univ Daily
+    new Chart(document.getElementById('univDailyChart'), {
+      type: 'line',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{ label: '설정 건수', data: alignToRange(DATA.univ_daily, 'date', 'count', 0), ...lineDefaults('#6366f1') }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 21. Download Compare Chart
+    const dlAllDates = ALL_DATES;
+    const iosMap = Object.fromEntries(DATA.ios_daily_dl.map(d => [d.date, d.count]));
+    const andNewMap = Object.fromEntries(DATA.android_daily_new.map(d => [d.date, d.count]));
+    const dlLabels = dlAllDates.map(d => fmtDate(d));
+    const iosDlData = dlAllDates.map(d => iosMap[d] ?? null);
+    const andNewData = dlAllDates.map(d => andNewMap[d] ?? null);
+    let dlCompareChart = new Chart(document.getElementById('dlCompareChart'), {
+      type: 'bar',
+      data: {
+        labels: dlLabels,
+        datasets: [
+          { label: 'iOS 다운로드', data: iosDlData, backgroundColor: '#1a73e8bb', borderRadius: 2 },
+          { label: 'Android 신규', data: andNewData, backgroundColor: '#34a853bb', borderRadius: 2 }
+        ]
+      },
+      options: { ...defaults, scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } } }
+    });
+    function switchDlTab(mode, btn) {
+      document.querySelectorAll('#dlTabBtns .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      dlCompareChart.data.datasets[0].hidden = (mode === 'android');
+      dlCompareChart.data.datasets[1].hidden = (mode === 'ios');
+      dlCompareChart.update();
+    }
+
+    // 22. Android Cumulative
+    new Chart(document.getElementById('androidCumulChart'), {
+      type: 'line',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{ label: 'Android 누적 설치', data: alignToRange(DATA.android_cumulative, 'date', 'count', null), ...lineDefaults('#34a853'), fill: true }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults, min: 800 } }
+      }
+    });
+
+    // 23. Android Daily New
+    new Chart(document.getElementById('androidNewChart'), {
+      type: 'bar',
+      data: {
+        labels: ALL_LABELS,
+        datasets: [{ label: '신규 설치', data: alignToRange(DATA.android_daily_new, 'date', 'count', null), backgroundColor: '#e67e22bb', borderRadius: 3, borderWidth: 0 }]
+      },
+      options: {
+        ...defaults, plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, callback: tickEveryOther } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 24. Page View Bar ★datalabels
+    new Chart(document.getElementById('pageViewChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.page_views.map(d => d.menu),
+        datasets: [{ label: '조회수', data: DATA.page_views.map(d => d.views), backgroundColor: COLORS.map(c => c + 'cc'), borderRadius: 4, borderWidth: 0 }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 80 } },
+        plugins: {
+          ...defaults.plugins, legend: { display: false },
+          tooltip: { callbacks: { label: (c) => ` ${c.parsed.x.toLocaleString()}회 (${DATA.page_views[c.dataIndex].ratio}%)` } },
+          datalabels: DL_BAR(v => v.toLocaleString() + '회')
+        },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { size: 11 } } } }
+      }
+    });
+
+    // 25. Page View Doughnut
+    new Chart(document.getElementById('pageViewPieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: DATA.page_views.map(d => d.menu),
+        datasets: [{ data: DATA.page_views.map(d => d.views), backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, cutout: '50%',
+        plugins: {
+          ...defaults.plugins,
+          legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 5 } },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}회 (${DATA.page_views[c.dataIndex].ratio}%)` } }
+        }
+      }
+    });
+
+    // 26. GA Region Bar
+    const GA = DATA.ga_region;
+    let gaMode = 'active';
+    let gaBarChart = new Chart(document.getElementById('gaRegionBarChart'), {
+      type: 'bar',
+      data: {
+        labels: GA.map(d => d.region),
+        datasets: [{
+          label: '활성 사용자', data: GA.map(d => d.active),
+          backgroundColor: COLORS.map(c => c + 'cc'), borderRadius: 4, borderWidth: 0, barThickness: 15
+        }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 55 } },
+        plugins: {
+          ...defaults.plugins, legend: { display: false },
+          tooltip: { callbacks: { label: (c) => ` ${c.parsed.x.toLocaleString()}명 (${GA[c.dataIndex].ratio_active}%)` } },
+          datalabels: DL_BAR(v => v.toLocaleString() + '명')
+        },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { size: 11 } } } }
+      }
+    });
+    function switchGaTab(mode, btn) {
+      document.querySelectorAll('#gaTabBtns .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gaMode = mode;
+      if (mode === 'active') {
+        gaBarChart.data.datasets[0].label = '활성 사용자';
+        gaBarChart.data.datasets[0].data = GA.map(d => d.active);
+        gaBarChart.options.plugins.tooltip.callbacks.label = (c) => ` ${c.parsed.x.toLocaleString()}명 (${GA[c.dataIndex].ratio_active}%)`;
+      } else {
+        gaBarChart.data.datasets[0].label = '총 사용자';
+        gaBarChart.data.datasets[0].data = GA.map(d => d.users);
+        gaBarChart.options.plugins.tooltip.callbacks.label = (c) => ` ${c.parsed.x.toLocaleString()}명 (${GA[c.dataIndex].ratio_users}%)`;
+      }
+      gaBarChart.update();
+    }
+
+    // 27. GA Region Doughnut
+    new Chart(document.getElementById('gaRegionPieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: GA.map(d => d.region),
+        datasets: [{ data: GA.map(d => d.active), backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        ...defaults, cutout: '50%',
+        plugins: {
+          ...defaults.plugins,
+          legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 5 } },
+          tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed.toLocaleString()}명 (${GA[c.dataIndex].ratio_active}%)` } }
+        }
+      }
+    });
+
+    // 28. Branch Download Chart ★datalabels
+    const denseBranchDl = DATA.branch_downloads.length > 40;
+    new Chart(document.getElementById('branchDlChart'), {
+      type: 'bar',
+      data: {
+        labels: DATA.branch_downloads.map(d => d.branch),
+        datasets: [{
+          label: '다운로드수', data: DATA.branch_downloads.map(d => d.count),
+          backgroundColor: DATA.branch_downloads.map((_, i) => COLORS[i % COLORS.length] + 'cc'),
+          borderColor: DATA.branch_downloads.map((_, i) => COLORS[i % COLORS.length]),
+          borderWidth: 1, borderRadius: 3, barThickness: 15
+        }]
+      },
+      options: {
+        ...defaults, indexAxis: 'y',
+        layout: { padding: { right: 45 } },
+        plugins: {
+          ...defaults.plugins, legend: { display: false },
+          tooltip: { callbacks: { label: (c) => ` ${c.parsed.x.toLocaleString()}건` } },
+          datalabels: {
+            ...DL_BAR(v => v.toLocaleString() + '건'),
+            offset: 2,
+            font: {
+              size: 8,
+              weight: '600',
+              family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif"
+            },
+            display: (ctx) => {
+              const v = ctx.dataset.data[ctx.dataIndex];
+              if (Number(v) <= 0) return false;
+              if (!denseBranchDl) return true;
+              // 라벨이 많은 경우, 절반만 표시해서 겹침 방지
+              return ctx.dataIndex % 2 === 0;
+            }
+          }
+        },
+        scales: { x: { ...scaleDefaults }, y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { ...scaleDefaults.ticks.font, size: 9 } } } }
+      }
+    });
+
+    // ═══════ Navigation ═══════
+    function setActive(el) {
+      setTimeout(() => {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+      }, 50);
+    }
+
+    // Scrollspy
+    const sections = document.querySelectorAll('.section');
+    const navItems = document.querySelectorAll('.nav-item');
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(s => {
+        if (window.scrollY >= s.offsetTop - 120) current = s.id;
+      });
+      navItems.forEach(n => {
+        n.classList.remove('active');
+        if (n.getAttribute('href') === '#' + current) n.classList.add('active');
+      });
+    }, { passive: true });
+  </script>
+</body>
+
+</html>

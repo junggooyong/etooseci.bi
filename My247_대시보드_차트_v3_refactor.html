@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이투스ECI My247 App | 데이터 대시보드 v3 (정렬/정합성 개선)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --secondary: #34a853;
+      --accent: #fbbc04;
+      --danger: #ea4335;
+      --purple: #9b59b6;
+      --orange: #e67e22;
+      --teal: #1abc9c;
+      --bg: #f0f4f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 18px 70px;
+    }
+
+    .topbar {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      position: sticky;
+      top: 14px;
+      z-index: 10;
+    }
+
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .topbar-meta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text-muted);
+      align-items: center;
+    }
+
+    .date-badge {
+      background: var(--primary);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .kpi-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+      border-top: 4px solid transparent;
+    }
+
+    .kpi-card.blue { border-top-color: var(--primary); }
+    .kpi-card.green { border-top-color: var(--secondary); }
+    .kpi-card.orange { border-top-color: var(--orange); }
+    .kpi-card.purple { border-top-color: var(--purple); }
+    .kpi-card.teal { border-top-color: var(--teal); }
+    .kpi-card.red { border-top-color: var(--danger); }
+    .kpi-card.yellow { border-top-color: var(--accent); }
+
+    .kpi-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .section {
+      margin-top: 22px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (max-width: 1100px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+      overflow: hidden;
+    }
+
+    .chart-title {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 320px;
+    }
+    .chart-wrap.h220 { height: 220px; }
+    .chart-wrap.h260 { height: 260px; }
+    .chart-wrap.h360 { height: 360px; }
+    .chart-wrap.h420 { height: 420px; }
+    canvas { width: 100% !important; height: 100% !important; }
+
+    .tabs {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .tab-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .warning-box {
+      border: 1px solid rgba(234,67,53,.25);
+      background: rgba(234,67,53,.06);
+      color: #7f1d1d;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="topbar-title">🏫 이투스ECI My247 App — 통합 데이터 대시보드 (v3)</div>
+      <div class="topbar-meta">
+        <span>기준: <span id="rangeText"></span></span>
+        <span class="date-badge" id="daysBadge"></span>
+        <span>정렬: `start~end` 전체 날짜 기준 자동 보정</span>
+      </div>
+      <div class="warning-box" id="warnings" style="display:none"></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">총 순공시간</div>
+        <div class="kpi-value"><span id="kpiTotalHours">-</span><span style="font-size:16px;font-weight:900;color:var(--text-muted);margin-left:4px">h</span></div>
+        <div class="kpi-sub" id="kpiHoursSub">-</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">앱 이용 학생수</div>
+        <div class="kpi-value"><span id="kpiTotalStudents">-</span><span style="font-size:16px;font-weight:900;color:var(--text-muted);margin-left:4px">명</span></div>
+        <div class="kpi-sub">순공시간 기록 학생(기간 누적)</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">총 로그인 사용자</div>
+        <div class="kpi-value"><span id="kpiTotalLoginUsers">-</span><span style="font-size:16px;font-weight:900;color:var(--text-muted);margin-left:4px">명</span></div>
+        <div class="kpi-sub">학생 / 학부모</div>
+      </div>
+      <div class="kpi-card teal">
+        <div class="kpi-label">지점별 다운로드 합계</div>
+        <div class="kpi-value"><span id="kpiBranchDlTotal">-</span><span style="font-size:16px;font-weight:900;color:var(--text-muted);margin-left:4px">건</span></div>
+        <div class="kpi-sub" id="kpiBranchDlSub">지점 차트 합산</div>
+      </div>
+    </div>
+
+    <section class="section" aria-label="순공시간/로그인/출결">
+      <div class="section-title">📈 기간 시계열(날짜 정렬 개선)</div>
+      <div class="grid-2" style="margin-top: 14px;">
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="dot" style="background:var(--primary)"></span>
+            일별 순공시간 추이 (시간)
+            <span class="tabs">
+              <button class="tab-btn active" onclick="switchDailyStudy('hours', this)">순공시간(h)</button>
+              <button class="tab-btn" onclick="switchDailyStudy('students', this)">참여 학생수</button>
+            </span>
+          </div>
+          <div class="chart-wrap h360">
+            <canvas id="dailyStudyChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="dot" style="background:var(--orange)"></span>
+            일별 신규 로그인 현황 (학생/학부모)
+          </div>
+          <div class="chart-wrap h360">
+            <canvas id="loginDailyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-1" style="margin-top: 14px;">
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="dot" style="background:var(--accent)"></span>
+            일별 출결변경 신청 건수
+          </div>
+          <div class="chart-wrap h260">
+            <canvas id="attendDailyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="다운로드">
+      <div class="section-title">📲 다운로드 비교(기간 하드코딩 제거)</div>
+      <div class="grid-2" style="margin-top: 14px;">
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="dot" style="background:var(--primary)"></span>
+            iOS/Android 일별 다운로드 비교
+            <span class="tabs" id="dlTabBtns">
+              <button class="tab-btn active" onclick="switchDlTab('all', this)">전체</button>
+              <button class="tab-btn" onclick="switchDlTab('ios', this)">iOS</button>
+              <button class="tab-btn" onclick="switchDlTab('android', this)">Android</button>
+            </span>
+          </div>
+          <div class="chart-wrap h360">
+            <canvas id="dlCompareChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">
+            <span class="dot" style="background:var(--teal)"></span>
+            지점별 앱 다운로드 수 (전체)
+          </div>
+          <div class="chart-wrap h420">
+            <canvas id="branchDlChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+    Chart.defaults.set('plugins.datalabels', { display: false });
+
+    const COLORS = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#9b59b6', '#e67e22', '#1abc9c', '#3498db', '#e74c3c', '#2ecc71', '#f39c12'];
+    const range = { start: '2026-03-03', end: '2026-04-03' };
+
+    function parseDateStr(s) {
+      const [y, m, d] = s.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+    function dateRangeInclusive(startStr, endStr) {
+      const out = [];
+      const s = parseDateStr(startStr);
+      const e = parseDateStr(endStr);
+      for (let cur = new Date(s.getTime()); cur <= e; cur.setDate(cur.getDate() + 1)) {
+        out.push(formatDate(cur));
+      }
+      return out;
+    }
+
+    const ALL_DATES = dateRangeInclusive(range.start, range.end);
+
+    function alignSeriesToRange(series, dateKey, valueKey, fillValue = 0) {
+      const map = new Map(series.map(x => [x[dateKey], x[valueKey]]));
+      return ALL_DATES.map(d => (map.has(d) ? map.get(d) : fillValue));
+    }
+
+    function missingDates(series, dateKey) {
+      const set = new Set(series.map(x => x[dateKey]));
+      return ALL_DATES.filter(d => !set.has(d));
+    }
+
+    const DL_BAR = (fmt) => ({
+      display: true,
+      anchor: 'end',
+      align: 'right',
+      offset: 3,
+      clip: false,
+      formatter: (v) => (Number(v) > 0 ? (fmt ? fmt(v) : v.toLocaleString()) : ''),
+      font: { size: 10, weight: '700', family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
+      color: '#374151'
+    });
+
+    const defaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 11 }, padding: 10 } },
+        tooltip: {
+          titleFont: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 12 },
+          bodyFont: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 11 }
+        }
+      },
+      scales: {}
+    };
+
+    const scaleDefaults = {
+      grid: { color: 'rgba(0,0,0,.05)' },
+      ticks: { font: { family: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", size: 11 } }
+    };
+
+    // v3: 문제 구간 중심 DATA (기간 정렬/하드코딩 개선)
+    const DATA = {
+      kpi: { total_hours: 98762.2, total_students: 1123, avg_hours_per_student: 87.9, total_login_users: 3841, total_pass_selections: 5347, total_attend_changes: 384 },
+
+      daily_study: [
+        {"date":"2026-03-03","hours":717.1,"students":148},{"date":"2026-03-04","hours":2321.8,"students":332},{"date":"2026-03-05","hours":3660.3,"students":439},{"date":"2026-03-06","hours":4063.2,"students":444},{"date":"2026-03-07","hours":3636.9,"students":403},{"date":"2026-03-08","hours":1501.6,"students":218},{"date":"2026-03-09","hours":4365.8,"students":451},{"date":"2026-03-10","hours":5149.2,"students":473},{"date":"2026-03-11","hours":4406.1,"students":443},{"date":"2026-03-12","hours":4664.2,"students":438},{"date":"2026-03-13","hours":4572.8,"students":422},{"date":"2026-03-14","hours":3293.2,"students":354},{"date":"2026-03-15","hours":1149.0,"students":155},{"date":"2026-03-16","hours":2636.8,"students":305},{"date":"2026-03-17","hours":2568.4,"students":312},{"date":"2026-03-18","hours":3672.3,"students":389},{"date":"2026-03-19","hours":3727.6,"students":374},{"date":"2026-03-20","hours":3630.5,"students":368},{"date":"2026-03-21","hours":2817.6,"students":315},{"date":"2026-03-22","hours":725.8,"students":101},{"date":"2026-03-23","hours":3506.4,"students":356},{"date":"2026-03-24","hours":3600.1,"students":355},{"date":"2026-03-25","hours":3324.1,"students":341},{"date":"2026-03-26","hours":3556.2,"students":359},{"date":"2026-03-27","hours":3593.5,"students":361},{"date":"2026-03-28","hours":2413.5,"students":271},{"date":"2026-03-29","hours":943.5,"students":132},{"date":"2026-03-30","hours":3605.1,"students":368},{"date":"2026-03-31","hours":3704.8,"students":370},{"date":"2026-04-01","hours":3584.2,"students":361},{"date":"2026-04-02","hours":3650.5,"students":378}
+      ],
+
+      login_daily: [
+        {"date":"2026-03-03","student":934,"guardian":195},{"date":"2026-03-04","student":683,"guardian":93},{"date":"2026-03-05","student":348,"guardian":34},{"date":"2026-03-06","student":212,"guardian":19},{"date":"2026-03-07","student":103,"guardian":25},{"date":"2026-03-08","student":70,"guardian":25},{"date":"2026-03-09","student":167,"guardian":28},{"date":"2026-03-10","student":115,"guardian":4},{"date":"2026-03-11","student":60,"guardian":8},{"date":"2026-03-12","student":43,"guardian":6},{"date":"2026-03-13","student":43,"guardian":5},{"date":"2026-03-14","student":23,"guardian":3},{"date":"2026-03-15","student":15,"guardian":7},{"date":"2026-03-16","student":44,"guardian":9},{"date":"2026-03-17","student":33,"guardian":7},{"date":"2026-03-18","student":34,"guardian":8},{"date":"2026-03-19","student":14,"guardian":4},{"date":"2026-03-20","student":13,"guardian":2},{"date":"2026-03-21","student":12,"guardian":5},{"date":"2026-03-22","student":23,"guardian":6},{"date":"2026-03-23","student":35,"guardian":6},{"date":"2026-03-24","student":23,"guardian":4},{"date":"2026-03-25","student":18,"guardian":6},{"date":"2026-03-26","student":21,"guardian":10},{"date":"2026-03-27","student":16,"guardian":5},{"date":"2026-03-28","student":14,"guardian":5},{"date":"2026-03-29","student":15,"guardian":10},{"date":"2026-03-30","student":36,"guardian":7},{"date":"2026-03-31","student":13,"guardian":8},{"date":"2026-04-01","student":54,"guardian":8},{"date":"2026-04-02","student":29,"guardian":5}
+      ],
+
+      attend_daily: [
+        {"date":"2026-03-03","count":17},{"date":"2026-03-04","count":6},{"date":"2026-03-05","count":17},{"date":"2026-03-06","count":14},{"date":"2026-03-07","count":18},{"date":"2026-03-08","count":4},{"date":"2026-03-09","count":9},{"date":"2026-03-10","count":8},{"date":"2026-03-11","count":11},{"date":"2026-03-12","count":15},{"date":"2026-03-13","count":16},{"date":"2026-03-14","count":11},{"date":"2026-03-15","count":9},{"date":"2026-03-16","count":19},{"date":"2026-03-17","count":3},{"date":"2026-03-18","count":18},{"date":"2026-03-19","count":19},{"date":"2026-03-20","count":17},{"date":"2026-03-21","count":11},{"date":"2026-03-22","count":4},{"date":"2026-03-23","count":11},{"date":"2026-03-24","count":17},{"date":"2026-03-25","count":17},{"date":"2026-03-26","count":8},{"date":"2026-03-27","count":19},{"date":"2026-03-28","count":19},{"date":"2026-03-29","count":12},{"date":"2026-03-30","count":21},{"date":"2026-03-31","count":14}
+      ],
+
+      ios_daily_dl: [
+        {"date":"2026-03-03","count":780},{"date":"2026-03-04","count":657},{"date":"2026-03-05","count":275},{"date":"2026-03-06","count":211},{"date":"2026-03-07","count":116},{"date":"2026-03-08","count":89},{"date":"2026-03-09","count":158},{"date":"2026-03-10","count":122},{"date":"2026-03-11","count":96},{"date":"2026-03-12","count":62},{"date":"2026-03-13","count":62},{"date":"2026-03-14","count":41},{"date":"2026-03-15","count":51},{"date":"2026-03-16","count":68},{"date":"2026-03-17","count":52},{"date":"2026-03-18","count":52},{"date":"2026-03-19","count":38},{"date":"2026-03-20","count":38},{"date":"2026-03-21","count":39},{"date":"2026-03-22","count":63},{"date":"2026-03-23","count":65},{"date":"2026-03-24","count":54},{"date":"2026-03-25","count":29},{"date":"2026-03-26","count":42},{"date":"2026-03-27","count":21},{"date":"2026-03-28","count":27},{"date":"2026-03-29","count":42},{"date":"2026-03-30","count":55},{"date":"2026-03-31","count":65}
+      ],
+
+      android_daily_new: [
+        {"date":"2026-03-06","count":55},{"date":"2026-03-07","count":30},{"date":"2026-03-08","count":70},{"date":"2026-03-09","count":60},{"date":"2026-03-10","count":30},{"date":"2026-03-11","count":20},{"date":"2026-03-12","count":20},{"date":"2026-03-13","count":20},{"date":"2026-03-14","count":10},{"date":"2026-03-15","count":20},{"date":"2026-03-16","count":30},{"date":"2026-03-17","count":20},{"date":"2026-03-18","count":10},{"date":"2026-03-19","count":20},{"date":"2026-03-20","count":10},{"date":"2026-03-21","count":10},{"date":"2026-03-22","count":30},{"date":"2026-03-23","count":30},{"date":"2026-03-24","count":10},{"date":"2026-03-25","count":20},{"date":"2026-03-26","count":20},{"date":"2026-03-27","count":10},{"date":"2026-03-28","count":10}
+      ],
+
+      // v3: 요청 받은 지점별 다운로드 테이블 반영
+      branch_downloads: [
+        {"branch":"이천기숙학원","count":374},
+        {"branch":"안성기숙학원","count":308},
+        {"branch":"독학기숙학원","count":284},
+        {"branch":"대치","count":190},
+        {"branch":"분당정자","count":177},
+        {"branch":"다산","count":101},
+        {"branch":"강북","count":85},
+        {"branch":"목동","count":84},
+        {"branch":"서울성북","count":81},
+        {"branch":"서울성동","count":77},
+        {"branch":"마포","count":75},
+        {"branch":"인천송도","count":71},
+        {"branch":"부산교대","count":71},
+        {"branch":"서울송파","count":69},
+        {"branch":"평택","count":69},
+        {"branch":"은평서대문","count":68},
+        {"branch":"서울광진","count":66},
+        {"branch":"의정부","count":62},
+        {"branch":"수원정자","count":61},
+        {"branch":"광주수완","count":51},
+        {"branch":"일산동구","count":49},
+        {"branch":"대구달서","count":46},
+        {"branch":"수원시청","count":46},
+        {"branch":"일산서구","count":43},
+        {"branch":"대구수성 1관","count":43},
+        {"branch":"동탄","count":40},
+        {"branch":"천안","count":38},
+        {"branch":"인천부평","count":38},
+        {"branch":"대전둔산","count":36},
+        {"branch":"부산서면","count":35},
+        {"branch":"목포","count":34},
+        {"branch":"김포","count":34},
+        {"branch":"인천청라","count":33},
+        {"branch":"광주북구","count":31},
+        {"branch":"광명","count":31},
+        {"branch":"수원영통","count":31},
+        {"branch":"노량진","count":30},
+        {"branch":"대구수성 2관","count":30},
+        {"branch":"인천인하대","count":30},
+        {"branch":"용인수지","count":29},
+        {"branch":"부산해운대","count":29},
+        {"branch":"진주","count":27},
+        {"branch":"서울강동","count":27},
+        {"branch":"광주동구","count":25},
+        {"branch":"서울도봉","count":25},
+        {"branch":"서울대점","count":24},
+        {"branch":"춘천","count":24},
+        {"branch":"광주남구","count":22},
+        {"branch":"하남","count":19},
+        {"branch":"울산남구","count":19},
+        {"branch":"서울강서","count":19},
+        {"branch":"부산북구","count":17},
+        {"branch":"파주","count":15},
+        {"branch":"부천","count":13},
+        {"branch":"원주","count":11},
+        {"branch":"청주","count":10},
+        {"branch":"부산대","count":10},
+        {"branch":"안산","count":7},
+        {"branch":"목동오목교","count":7},
+        {"branch":"창원","count":3},
+        {"branch":"제주","count":3},
+        {"branch":"구리남양주","count":2},
+        {"branch":"광주동구(남)","count":1},
+        {"branch":"서울노원","count":1},
+        {"branch":"익산","count":1},
+        {"branch":"전주완산","count":1}
+      ]
+    };
+
+    // KPI/정합성 요약(스타일 개선: 하드코딩 제거 + 경고 영역 표시)
+    const rangeDays = ALL_DATES.length;
+    document.getElementById('rangeText').textContent = range.start.replaceAll('-', '.') + ' ~ ' + range.end.replaceAll('-', '.');
+    document.getElementById('daysBadge').textContent = rangeDays + '일';
+
+    const kpiHoursSub = document.getElementById('kpiHoursSub');
+    const kpiBranchTotal = DATA.branch_downloads.reduce((a,b)=>a+b.count, 0);
+    document.getElementById('kpiBranchDlTotal').textContent = kpiBranchTotal.toLocaleString();
+
+    document.getElementById('kpiTotalHours').textContent = DATA.kpi.total_hours.toLocaleString();
+    document.getElementById('kpiTotalStudents').textContent = DATA.kpi.total_students.toLocaleString();
+    document.getElementById('kpiTotalLoginUsers').textContent = DATA.kpi.total_login_users.toLocaleString();
+    document.getElementById('kpiBranchDlSub').textContent = '차트 합산: ' + kpiBranchTotal.toLocaleString() + '건';
+
+    const chartHoursSum = DATA.daily_study.reduce((a, d) => a + d.hours, 0);
+    kpiHoursSub.textContent = '차트(일별) 합산: ' + chartHoursSum.toFixed(1).toLocaleString() + 'h (누락 일자는 0으로 채움)';
+
+    const missDailyStudy = missingDates(DATA.daily_study, 'date');
+    const missLoginDaily = missingDates(DATA.login_daily, 'date');
+    const missAttendDaily = missingDates(DATA.attend_daily, 'date');
+    const missIos = missingDates(DATA.ios_daily_dl, 'date');
+    const missAndroid = missingDates(DATA.android_daily_new, 'date');
+
+    const warningsEl = document.getElementById('warnings');
+    const warnLines = [];
+    function pushWarnIf(arr, label, limit = 4) {
+      if (!arr.length) return;
+      const shown = arr.slice(0, limit).join(', ');
+      const more = arr.length > limit ? (' 외 ' + (arr.length - limit) + '일') : '';
+      warnLines.push(`${label}: 누락일 ${arr.length}개 (예: ${shown}${more})`);
+    }
+    pushWarnIf(missDailyStudy, '순공시간', 4);
+    pushWarnIf(missLoginDaily, '로그인', 4);
+    pushWarnIf(missAttendDaily, '출결변경', 4);
+    pushWarnIf(missIos, 'iOS 다운로드', 3);
+    pushWarnIf(missAndroid, 'Android 신규 설치', 3);
+
+    if (warnLines.length) {
+      warningsEl.style.display = 'block';
+      warningsEl.innerHTML = '주의: 아래 시계열은 제공된 데이터에 누락일이 있어, v3에서는 `0`으로 자동 채워서 시각적 구간이 끊기지 않게 했습니다.<br><br>' + warnLines.join('<br>');
+    }
+
+    // 날짜 라벨(스타일 개선: 월/일만 출력)
+    function fmtDateLabel(dStr) {
+      // 2026-03-03 -> 3/3
+      const [, m, day] = dStr.split('-');
+      return Number(m) + '/' + Number(day);
+    }
+    const labels = ALL_DATES.map(fmtDateLabel);
+
+    // 1) Daily Study
+    const dailyHours = alignSeriesToRange(DATA.daily_study, 'date', 'hours', 0);
+    const dailyStudents = alignSeriesToRange(DATA.daily_study, 'date', 'students', 0);
+
+    let dailyStudyChart = new Chart(document.getElementById('dailyStudyChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: '순공시간(h)',
+          data: dailyHours,
+          borderColor: '#1a73e8',
+          backgroundColor: '#1a73e822',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.35,
+          fill: true
+        }]
+      },
+      options: {
+        ...defaults,
+        plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: {
+          x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45, minRotation: 30 } },
+          y: { ...scaleDefaults }
+        }
+      }
+    });
+
+    function switchDailyStudy(mode, btn) {
+      const tabs = btn && btn.parentElement;
+      if (tabs) tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const ds = dailyStudyChart.data.datasets[0];
+      if (mode === 'hours') {
+        ds.label = '순공시간(h)';
+        ds.data = dailyHours;
+        ds.borderColor = '#1a73e8';
+        ds.backgroundColor = '#1a73e822';
+      } else {
+        ds.label = '참여 학생수(명)';
+        ds.data = dailyStudents;
+        ds.borderColor = '#34a853';
+        ds.backgroundColor = '#34a85322';
+      }
+      dailyStudyChart.update();
+    }
+
+    // 2) Login Daily (stacked bar)
+    const loginStudent = alignSeriesToRange(DATA.login_daily, 'date', 'student', 0);
+    const loginGuardian = alignSeriesToRange(DATA.login_daily, 'date', 'guardian', 0);
+
+    new Chart(document.getElementById('loginDailyChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: '학생', data: loginStudent, backgroundColor: '#1a73e8bb', borderRadius: 2, datalabels: DL_BAR(v => v.toLocaleString()) },
+          { label: '학부모', data: loginGuardian, backgroundColor: '#34a853bb', borderRadius: 2, datalabels: DL_BAR(v => v.toLocaleString()) }
+        ]
+      },
+      options: {
+        ...defaults,
+        scales: {
+          x: { ...scaleDefaults, stacked: true, ticks: { ...scaleDefaults.ticks, maxRotation: 45 } },
+          y: { ...scaleDefaults, stacked: true }
+        },
+        plugins: { ...defaults.plugins, legend: { position: 'bottom' } }
+      }
+    });
+
+    // 3) Attend Daily
+    const attendDaily = alignSeriesToRange(DATA.attend_daily, 'date', 'count', 0);
+    new Chart(document.getElementById('attendDailyChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: '신청 건수',
+          data: attendDaily,
+          backgroundColor: '#fbbc04bb',
+          borderRadius: 3,
+          datalabels: DL_BAR(v => v.toLocaleString())
+        }]
+      },
+      options: {
+        ...defaults,
+        plugins: { ...defaults.plugins, legend: { display: false } },
+        scales: { x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45 } }, y: { ...scaleDefaults } }
+      }
+    });
+
+    // 4) Download compare (no hard-coded date list)
+    const iosDl = alignSeriesToRange(DATA.ios_daily_dl, 'date', 'count', 0);
+    const andNew = alignSeriesToRange(DATA.android_daily_new, 'date', 'count', 0);
+
+    let dlCompareChart = new Chart(document.getElementById('dlCompareChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'iOS 다운로드', data: iosDl, backgroundColor: '#1a73e8bb', borderRadius: 2, datalabels: DL_BAR(v => v.toLocaleString()) },
+          { label: 'Android 신규', data: andNew, backgroundColor: '#34a853bb', borderRadius: 2, datalabels: DL_BAR(v => v.toLocaleString()) }
+        ]
+      },
+      options: {
+        ...defaults,
+        plugins: { ...defaults.plugins, legend: { position: 'bottom' } },
+        scales: {
+          x: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, maxRotation: 45 } },
+          y: { ...scaleDefaults }
+        }
+      }
+    });
+
+    function switchDlTab(mode, btn) {
+      document.querySelectorAll('#dlTabBtns .tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      dlCompareChart.data.datasets[0].hidden = (mode === 'android');
+      dlCompareChart.data.datasets[1].hidden = (mode === 'ios');
+      dlCompareChart.update();
+    }
+
+    // 5) Branch download bar (horizontal)
+    const branchLabels = DATA.branch_downloads.map(d => d.branch);
+    const branchCounts = DATA.branch_downloads.map(d => d.count);
+    new Chart(document.getElementById('branchDlChart'), {
+      type: 'bar',
+      data: {
+        labels: branchLabels,
+        datasets: [{
+          label: '다운로드수',
+          data: branchCounts,
+          backgroundColor: branchCounts.map((_, i) => (COLORS[i % COLORS.length] + 'cc')),
+          borderColor: branchCounts.map((_, i) => COLORS[i % COLORS.length]),
+          borderWidth: 1,
+          borderRadius: 3,
+          barThickness: 14,
+          datalabels: DL_BAR(v => v.toLocaleString())
+        }]
+      },
+      options: {
+        ...defaults,
+        indexAxis: 'y',
+        plugins: { ...defaults.plugins, legend: { display: false } },
+        layout: { padding: { right: 25 } },
+        scales: {
+          x: { ...scaleDefaults },
+          y: { ...scaleDefaults, ticks: { ...scaleDefaults.ticks, font: { ...scaleDefaults.ticks.font, size: 11 } } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
