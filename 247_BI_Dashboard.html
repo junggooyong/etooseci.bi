@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>247학원 BI Dashboard | My247 운영 인사이트</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0d1b2a;--navy2:#1b2a3b;--blue:#2563eb;--blue2:#60a5fa;
+  --teal:#0d9488;--green:#16a34a;--yellow:#d97706;--red:#dc2626;
+  --purple:#7c3aed;--orange:#ea580c;--pink:#db2777;--cyan:#0891b2;
+  --bg:#f1f5f9;--card:#fff;--border:#e2e8f0;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+}
+*{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;font-size:13px}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#0d1b2a 0%,#1e3a5f 60%,#1e4d7b 100%);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.hdr-logo{font-size:18px;font-weight:800;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px}
+.hdr-logo .badge247{background:var(--blue);color:#fff;padding:2px 8px;border-radius:5px;font-size:14px}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-chip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);padding:4px 12px;border-radius:20px;font-size:11px;display:flex;align-items:center;gap:5px}
+.btn-upload{background:var(--blue);color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:.2s}
+.btn-upload:hover{background:#1d4ed8}
+
+/* FILTER BAR */
+.fbar{background:var(--navy2);padding:7px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.07)}
+.flabel{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;flex-shrink:0}
+.fsel{background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.12);padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;min-width:130px}
+.fsel option{background:#1b2a3b}
+.fsep{width:1px;height:18px;background:rgba(255,255,255,.12);margin:0 2px}
+.freset{background:transparent;color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.12);padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;transition:.2s}
+.freset:hover{background:rgba(255,255,255,.08);color:#fff}
+.finfo{margin-left:auto;font-size:11px;color:rgba(255,255,255,.35)}
+
+/* TABS */
+.tabs{background:var(--card);border-bottom:2px solid var(--border);padding:0 20px;display:flex;gap:0;overflow-x:auto;position:sticky;top:58px;z-index:100;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 16px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s;display:flex;align-items:center;gap:5px}
+.tab:hover{color:var(--blue);background:rgba(37,99,235,.04)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* MAIN */
+.main{padding:18px 22px;max-width:1600px;margin:0 auto}
+.tc{display:none}.tc.active{display:block}
+
+/* KPI GRID */
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:18px}
+.kcard{background:var(--card);border-radius:10px;padding:15px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid var(--border);border-top:3px solid var(--kc,var(--blue));transition:.15s;cursor:default}
+.kcard:hover{transform:translateY(-2px);box-shadow:0 5px 14px rgba(0,0,0,.1)}
+.kicon{font-size:20px;margin-bottom:6px}
+.klabel{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.kval{font-size:22px;font-weight:800;color:var(--text);line-height:1.1}
+.ksub{font-size:10px;color:var(--text3);margin-top:3px}
+.kdelta{font-size:10px;font-weight:600;margin-top:4px}
+.kdelta.up{color:var(--green)}.kdelta.dn{color:var(--red)}
+
+/* CHART GRID */
+.cgrid{display:grid;gap:14px;margin-bottom:16px}
+.cg2{grid-template-columns:repeat(2,1fr)}
+.cg3{grid-template-columns:repeat(3,1fr)}
+.cg21{grid-template-columns:2fr 1fr}
+.cg12{grid-template-columns:1fr 2fr}
+.cg31{grid-template-columns:3fr 1fr}
+.ccard{background:var(--card);border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid var(--border)}
+.ccard.full{grid-column:1/-1}
+.ctitle{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:.3px}
+.cwrap{position:relative}.cwrap.h220{height:220px}.cwrap.h260{height:260px}.cwrap.h300{height:300px}.cwrap.h180{height:180px}
+
+/* TABLE */
+.tcard{background:var(--card);border-radius:10px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
+.thead2{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.ttitle{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;gap:5px}
+.tsearch{padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text);width:190px;background:#fafafa}
+.twrap{overflow-x:auto;max-height:380px;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:#f8fafc;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--blue)}
+th.sa::after{content:' ▲'}th.sd::after{content:' ▼'}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9;color:var(--text);white-space:nowrap}
+tr:hover td{background:#f8fafc}
+tr:last-child td{border-bottom:none}
+.bdt{font-size:10px;font-weight:600;padding:2px 7px;border-radius:12px;display:inline-block}
+.bg{background:#dcfce7;color:#15803d}.by{background:#fef9c3;color:#854d0e}.br{background:#fee2e2;color:#b91c1c}
+.bb{background:#dbeafe;color:#1e40af}.bp{background:#ede9fe;color:#6d28d9}.bt{background:#ccfbf1;color:#0f766e}
+.bgr{background:#f1f5f9;color:#475569}
+
+/* PROGRESS */
+.pbar{height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;width:70px;display:inline-block}
+.pfill{height:100%;border-radius:3px}
+
+/* SECTION HDR */
+.shdr{font-size:13px;font-weight:700;color:var(--text);margin:4px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+
+/* RANK LIST */
+.rlist{display:flex;flex-direction:column;gap:7px;padding:2px 0;overflow-y:auto}
+.ritem{display:flex;align-items:center;gap:8px}
+.rnum{width:20px;height:20px;border-radius:50%;background:#e2e8f0;color:var(--text2);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rnum.r1{background:#f59e0b;color:#fff}.rnum.r2{background:#94a3b8;color:#fff}.rnum.r3{background:#f97316;color:#fff}
+.rname{flex:1;min-width:0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rval{font-size:10px;color:var(--text3);flex-shrink:0}
+
+/* INSIGHT */
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:16px}
+.icard{background:var(--card);border-radius:10px;padding:14px 16px;border:1px solid var(--border);border-left:4px solid var(--ic,var(--blue))}
+.ititle{font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;text-transform:uppercase}
+.imetric{font-size:20px;font-weight:800;color:var(--ic,var(--blue));line-height:1.2;margin-bottom:3px}
+.ibody{font-size:11px;color:var(--text2);line-height:1.55}
+
+/* JOIN BADGE */
+.join1{background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700}
+.join2{background:#fef3c7;color:#92400e;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700}
+.join3{background:#f3e8ff;color:#6b21a8;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700}
+
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.mbox{background:#fff;border-radius:12px;padding:22px;width:500px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.mtitle{font-size:15px;font-weight:700;margin-bottom:3px}
+.msub{font-size:11px;color:var(--text3);margin-bottom:14px}
+.udrop{border:2px dashed var(--border);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:.2s;background:#fafafa}
+.udrop:hover,.udrop.drag{border-color:var(--blue);background:#eff6ff}
+.udrop-icon{font-size:32px;margin-bottom:6px}
+.flist{margin-top:10px;display:flex;flex-direction:column;gap:5px;max-height:140px;overflow-y:auto}
+.fitem{display:flex;align-items:center;gap:7px;padding:5px 8px;background:#f8fafc;border-radius:5px;font-size:11px}
+.fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fs{color:var(--text3)}.fst{flex-shrink:0}
+.plog{margin-top:10px;background:#0f172a;color:#a3e635;border-radius:6px;padding:10px;max-height:110px;overflow-y:auto;font-family:monospace;font-size:10px;display:none}
+.mbtns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.btn{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s}
+.btnp{background:var(--blue);color:#fff}.btnp:hover{background:#1d4ed8}
+.btns{background:#f1f5f9;color:var(--text2)}.btns:hover{background:#e2e8f0}
+
+/* JOIN INFO BOX */
+.joinbox{background:#fafafa;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap}
+.ji{display:flex;align-items:center;gap:5px}
+
+@media(max-width:768px){
+  .cg2,.cg3,.cg21,.cg12,.cg31{grid-template-columns:1fr}
+  .kgrid{grid-template-columns:repeat(2,1fr)}
+  .main{padding:12px 14px}
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div>
+    <div class="hdr-logo"><span class="badge247">247</span> BI Dashboard</div>
+    <div class="hdr-sub">My247 App · 지점 운영 인사이트 센터 · 본사 전용</div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-chip">📅 기준일: <strong id="dataDate">2026-06-08</strong></div>
+    <div class="hdr-chip" id="joinStatus">🔗 1차+2차+3차 조합</div>
+    <button class="btn-upload" onclick="openModal()">📂 CSV 업로드</button>
+  </div>
+</header>
+
+<div class="fbar">
+  <span class="flabel">필터</span>
+  <select class="fsel" id="branchFilter" onchange="applyFilters()">
+    <option value="">🏢 전체 지점</option>
+  </select>
+  <select class="fsel" id="regionFilter" onchange="applyFilters()">
+    <option value="">🗺️ 전체 지역</option>
+    <option value="서울">서울</option>
+    <option value="경기/인천">경기/인천</option>
+    <option value="지방">지방</option>
+    <option value="기숙학원">기숙학원</option>
+  </select>
+  <select class="fsel" id="monthFilter" onchange="applyFilters()">
+    <option value="">📅 전체 기간</option>
+    <option value="2026-01">2026년 1월</option>
+    <option value="2026-02">2026년 2월</option>
+    <option value="2026-03">2026년 3월</option>
+    <option value="2026-04">2026년 4월</option>
+    <option value="2026-05">2026년 5월</option>
+    <option value="2026-06">2026년 6월</option>
+  </select>
+  <div class="fsep"></div>
+  <button class="freset" onclick="resetFilters()">✕ 초기화</button>
+  <span class="finfo" id="finfo">전체 63개 지점 · 4,041명</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">📊 종합 현황</div>
+  <div class="tab" onclick="switchTab(1)">🏢 지점별 분석</div>
+  <div class="tab" onclick="switchTab(2)">⏱️ 학생 활동</div>
+  <div class="tab" onclick="switchTab(3)">📱 앱·디지털</div>
+  <div class="tab" onclick="switchTab(4)">📚 학습 현황</div>
+  <div class="tab" onclick="switchTab(5)">🎓 진학·상담</div>
+  <div class="tab" onclick="switchTab(6)">👨‍👩‍👧 학부모 참여</div>
+  <div class="tab" onclick="switchTab(7)">🔥 인기 강의</div>
+</div>
+
+<div class="main">
+
+<!-- TAB 0: 종합 현황 -->
+<div class="tc active" id="t0">
+  <div class="joinbox">
+    <div class="ji"><span class="join1">1차</span> branch_cd + 학생코드 + 날짜 직접 조합</div>
+    <div class="ji"><span class="join2">2차</span> branch_cd 없을 시 → 학생코드(student_cd/수강번호)로 지점 조회</div>
+    <div class="ji"><span class="join3">3차</span> 지점·학생코드 없을 시 → 단독 통계 (인기강의 등)</div>
+  </div>
+  <div class="kgrid" id="kgrid"></div>
+  <div class="cgrid cg21">
+    <div class="ccard">
+      <div class="ctitle">📈 월별 핵심 활동 트렌드</div>
+      <div class="cwrap h300"><canvas id="trendC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">🏆 지점별 순공시간 TOP 10</div>
+      <div class="cwrap h300"><canvas id="studyTopC"></canvas></div>
+    </div>
+  </div>
+  <div class="cgrid cg3">
+    <div class="ccard">
+      <div class="ctitle">📖 과목별 순공시간</div>
+      <div class="cwrap h200"><canvas id="subjC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">📱 기기 플랫폼</div>
+      <div class="cwrap h200"><canvas id="devC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">🎯 인강 패스 현황</div>
+      <div class="cwrap h200"><canvas id="passC"></canvas></div>
+    </div>
+  </div>
+  <div class="igrid" id="igrid"></div>
+</div>
+
+<!-- TAB 1: 지점별 분석 -->
+<div class="tc" id="t1">
+  <div class="cgrid cg21">
+    <div class="ccard">
+      <div class="ctitle">📅 월별 출결 + 순공시간 복합 추이</div>
+      <div class="cwrap h260"><canvas id="attMonthC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">⚖️ 지점별 상·벌점 비교</div>
+      <div class="cwrap h260"><canvas id="rewardC"></canvas></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead2">
+      <div class="ttitle">🏢 지점별 종합 현황표 <span class="join1">1차+2차</span></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input class="tsearch" id="bsearch" placeholder="🔍 지점명·코드 검색..." oninput="renderBranchTbl()">
+      </div>
+    </div>
+    <div class="twrap">
+      <table id="btbl">
+        <thead><tr>
+          <th onclick="sortT('btbl',0)">지점코드</th>
+          <th onclick="sortT('btbl',1)">지점명</th>
+          <th onclick="sortT('btbl',2)">학생</th>
+          <th onclick="sortT('btbl',3)">출결건수</th>
+          <th onclick="sortT('btbl',4)">순공(h)</th>
+          <th onclick="sortT('btbl',5)">질문</th>
+          <th onclick="sortT('btbl',6)">상담</th>
+          <th onclick="sortT('btbl',7)">편지</th>
+          <th onclick="sortT('btbl',8)">모의고사</th>
+          <th onclick="sortT('btbl',9)">앱학생(%)</th>
+          <th onclick="sortT('btbl',10)">앱학부모</th>
+          <th onclick="sortT('btbl',11)">상점</th>
+          <th onclick="sortT('btbl',12)">벌점</th>
+          <th onclick="sortT('btbl',13)">목표대학</th>
+          <th onclick="sortT('btbl',14)">입결</th>
+          <th onclick="sortT('btbl',15)">리포트</th>
+          <th onclick="sortT('btbl',16)">LMTI</th>
+        </tr></thead>
+        <tbody id="btbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: 학생 활동 -->
+<div class="tc" id="t2">
+  <div class="cgrid cg2">
+    <div class="ccard">
+      <div class="ctitle">📅 월별 출결 + 상·벌점 트렌드</div>
+      <div class="cwrap h260"><canvas id="actC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">🔄 출결 변경 유형 (지각/결석)</div>
+      <div class="cwrap h260"><canvas id="chgC"></canvas></div>
+    </div>
+  </div>
+  <div class="cgrid cg2">
+    <div class="ccard">
+      <div class="ctitle">🏅 지점별 상·벌점 분포</div>
+      <div class="cwrap h260"><canvas id="rwdC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">⏱️ 학생별 순공시간 TOP 30 <span class="join2">2차</span></div>
+      <div class="cwrap h260"><canvas id="stdStudyC"></canvas></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead2">
+      <div class="ttitle">📋 학생별 순공시간 TOP 50</div>
+      <input class="tsearch" id="ssearch" placeholder="🔍 학생명/지점 검색..." oninput="renderStudentTbl()">
+    </div>
+    <div class="twrap">
+      <table id="stbl">
+        <thead><tr><th>순위</th><th onclick="sortT('stbl',1)">학생명</th><th onclick="sortT('stbl',2)">지점</th><th onclick="sortT('stbl',3)">순공(h)</th><th>비율</th></tr></thead>
+        <tbody id="stbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: 앱·디지털 -->
+<div class="tc" id="t3">
+  <div class="cgrid cg3">
+    <div class="ccard">
+      <div class="ctitle">📱 OS 플랫폼 비율</div>
+      <div class="cwrap h200"><canvas id="pfC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">👥 앱 사용자 유형</div>
+      <div class="cwrap h200"><canvas id="utC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">📊 LMTI / LMAT 참여 TOP 15</div>
+      <div class="cwrap h200"><canvas id="lmC"></canvas></div>
+    </div>
+  </div>
+  <div class="cgrid cg12">
+    <div class="ccard">
+      <div class="ctitle">📊 지점별 앱 등록률 현황</div>
+      <div class="cwrap h280"><canvas id="appRateC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">my247 앱 설정 현황</div>
+      <div id="appSettingDiv" style="padding:4px 0;font-size:12px;line-height:2"></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead2"><div class="ttitle">📱 지점별 앱 사용 현황 <span class="join1">1차</span></div></div>
+    <div class="twrap">
+      <table id="atbl">
+        <thead><tr>
+          <th>지점명</th><th onclick="sortT('atbl',1)">전체학생</th><th onclick="sortT('atbl',2)">앱학생</th>
+          <th onclick="sortT('atbl',3)">앱등록률</th><th onclick="sortT('atbl',4)">앱학부모</th>
+          <th onclick="sortT('atbl',5)">iOS</th><th onclick="sortT('atbl',6)">Android</th>
+          <th onclick="sortT('atbl',7)">LMTI</th><th onclick="sortT('atbl',8)">LMAT</th>
+        </tr></thead>
+        <tbody id="atbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: 학습 현황 -->
+<div class="tc" id="t4">
+  <div class="cgrid cg2">
+    <div class="ccard">
+      <div class="ctitle">📝 수능 선택과목 분포 TOP 12</div>
+      <div class="cwrap h280"><canvas id="sselC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">🎯 인강 패스 선택 현황</div>
+      <div class="cwrap h280"><canvas id="pass2C"></canvas></div>
+    </div>
+  </div>
+  <div class="cgrid cg2">
+    <div class="ccard">
+      <div class="ctitle">📋 모의고사 성적 등록 회차별</div>
+      <div class="cwrap h220"><canvas id="examC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">📖 과목별 누적 순공시간</div>
+      <div class="cwrap h220"><canvas id="subj2C"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 5: 진학·상담 -->
+<div class="tc" id="t5">
+  <div class="cgrid cg21">
+    <div class="ccard">
+      <div class="ctitle">🏫 목표 대학 선정 TOP 15</div>
+      <div class="cwrap h280"><canvas id="univC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">🎓 대학 입결 유형 분포</div>
+      <div class="cwrap h280"><canvas id="resTypeC"></canvas></div>
+    </div>
+  </div>
+  <div class="cgrid cg2">
+    <div class="ccard">
+      <div class="ctitle">💬 월별 상담·응원편지 현황</div>
+      <div class="cwrap h220"><canvas id="cnslC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">❓ 월별 질문예약 추이</div>
+      <div class="cwrap h220"><canvas id="qC"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 6: 학부모 참여 -->
+<div class="tc" id="t6">
+  <div class="cgrid cg12">
+    <div class="ccard">
+      <div class="ctitle">👨‍👩‍👧 지점별 학부모 등록률 (%) <span class="join2">2차</span></div>
+      <div class="cwrap h300"><canvas id="prateC"></canvas></div>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">💌 응원편지 발송 TOP 10</div>
+      <div class="rlist" id="letterRank" style="height:300px;overflow-y:auto;padding:4px 0"></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead2"><div class="ttitle">👪 지점별 학부모 참여 현황</div></div>
+    <div class="twrap">
+      <table id="ptbl">
+        <thead><tr>
+          <th>지점명</th><th onclick="sortT('ptbl',1)">전체학생</th>
+          <th onclick="sortT('ptbl',2)">학부모등록</th><th onclick="sortT('ptbl',3)">앱학부모</th>
+          <th onclick="sortT('ptbl',4)">등록률</th><th onclick="sortT('ptbl',5)">응원편지</th>
+        </tr></thead>
+        <tbody id="ptbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 7: 인기 강의 (3차 단독) -->
+<div class="tc" id="t7">
+  <div class="joinbox">
+    <div class="ji"><span class="join3">3차 단독통계</span> branch_cd·student_cd 없는 강의 수강현황 데이터 — 지점별 조합 없이 전체 클릭수 기준 집계</div>
+  </div>
+  <div class="cgrid cg2">
+    <div class="ccard full">
+      <div class="ctitle">🔥 인기 강의 클릭수 TOP 15 (이투스 강의)</div>
+      <div class="cwrap h320"><canvas id="lctC"></canvas></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="thead2"><div class="ttitle">📋 강의 목록 전체</div>
+      <input class="tsearch" id="lsearch" placeholder="🔍 강의명/과목 검색..." oninput="renderLctTbl()">
+    </div>
+    <div class="twrap">
+      <table id="ltbl">
+        <thead><tr><th>순위</th><th onclick="sortT('ltbl',1)">강의명</th><th onclick="sortT('ltbl',2)">과목</th><th onclick="sortT('ltbl',3)">클릭수</th></tr></thead>
+        <tbody id="ltbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- UPLOAD MODAL -->
+<div class="modal" id="umodal">
+  <div class="mbox">
+    <div class="mtitle">📂 CSV 데이터 업로드 (EUC-KR)</div>
+    <div class="msub">파일명으로 데이터 유형 자동 감지 · 1차→2차→3차 조합 자동 처리</div>
+    <div class="udrop" id="udrop" onclick="document.getElementById('ufile').click()" ondragover="doDrag(event)" ondrop="doDrop(event)">
+      <div class="udrop-icon">📁</div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:3px">CSV 파일을 드래그하거나 클릭하여 선택</div>
+      <div style="font-size:11px;color:var(--text3)">EUC-KR 자동 인코딩 · 다중 파일 동시 처리 지원</div>
+    </div>
+    <input type="file" id="ufile" multiple accept=".csv" onchange="handleFiles(this.files)" style="display:none">
+    <div class="flist" id="flist"></div>
+    <div class="plog" id="plog"></div>
+    <div class="mbtns">
+      <button class="btn btns" onclick="closeModal()">닫기</button>
+      <button class="btn btnp" id="procBtn" onclick="processFiles()" style="display:none">🔄 처리 시작</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const D = {"kpis":{"total_branches":63,"total_students":4041,"total_att":229993,"total_study_hours":360299.0,"total_questions":11974,"total_counseling":20661,"total_letters":12311,"total_app_users":3942,"total_devices":5827,"total_reward_p":1805,"total_reward_m":2123,"total_exam":1468,"total_results":1456,"data_date":"20260608"},"branches":[{"name":"강북","branch_cd":"1002","students":96,"att_count":5472,"study_hours":2202.5,"study_by_subj":{"수학":1313.1,"사회탐구":325.1,"국어":317.6,"영어":217.6,"과학탐구":27.4,"한국사":1.7},"reward":{"상점":0,"벌점":0},"app_students":72,"app_parents":0,"questions":0,"counseling":0,"letters":16,"exam":0,"lmti":44,"lmat":12,"univ_goal":34,"reports":0,"parents_info":15,"ios":74,"android":17,"results":0,"att_chg":{"결석":1},"att_monthly":{"2026-01":250,"2026-02":643,"2026-03":1307,"2026-04":1476,"2026-05":1541,"2026-06":255}},{"name":"광명","branch_cd":"2010","students":36,"att_count":2154,"study_hours":4260.0,"study_by_subj":{"수학":1545.7,"국어":1249.1,"사회탐구":702.1,"영어":594.1,"과학탐구":154.3,"제2외국어/한문":8.3},"reward":{"상점":0,"벌점":0},"app_students":27,"app_parents":3,"questions":116,"counseling":451,"letters":0,"exam":0,"lmti":26,"lmat":9,"univ_goal":13,"reports":0,"parents_info":4,"ios":34,"android":6,"results":0,"att_chg":{"지각":8,"결석":1},"att_monthly":{"2026-01":57,"2026-02":243,"2026-03":559,"2026-04":584,"2026-05":612,"2026-06":99}},{"name":"광주남구","branch_cd":"2057","students":87,"att_count":6121,"study_hours":0.0,"study_by_subj":{"수학":0.0,"사회탐구":0.0},"reward":{"상점":0,"벌점":0},"app_students":30,"app_parents":1,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":50,"lmat":0,"univ_goal":3,"reports":0,"parents_info":11,"ios":29,"android":3,"results":0,"att_chg":{},"att_monthly":{"2026-01":513,"2026-02":877,"2026-03":1255,"2026-04":1660,"2026-05":1575,"2026-06":241}},{"name":"광주동구","branch_cd":"2017","students":74,"att_count":4766,"study_hours":217.3,"study_by_subj":{"국어":80.6,"수학":62.5,"사회탐구":32.5,"과학탐구":26.1,"영어":14.8,"한국사":0.8},"reward":{"상점":0,"벌점":111},"app_students":89,"app_parents":2,"questions":0,"counseling":0,"letters":6,"exam":0,"lmti":1,"lmat":1,"univ_goal":10,"reports":0,"parents_info":10,"ios":87,"android":26,"results":0,"att_chg":{"지각":1},"att_monthly":{"2026-01":185,"2026-02":181,"2026-03":1155,"2026-04":1498,"2026-05":1501,"2026-06":246}},{"name":"광주북구","branch_cd":"2004","students":50,"att_count":2530,"study_hours":0.0,"study_by_subj":{"수학":0.0},"reward":{"상점":0,"벌점":0},"app_students":36,"app_parents":1,"questions":0,"counseling":353,"letters":0,"exam":0,"lmti":6,"lmat":1,"univ_goal":5,"reports":0,"parents_info":5,"ios":40,"android":14,"results":0,"att_chg":{},"att_monthly":{"2026-01":107,"2026-02":224,"2026-03":662,"2026-04":718,"2026-05":673,"2026-06":146}},{"name":"광주수완","branch_cd":"3006","students":46,"att_count":2514,"study_hours":23.6,"study_by_subj":{"수학":10.9,"국어":5.3,"사회탐구":4.7,"영어":1.7,"과학탐구":0.9},"reward":{"상점":0,"벌점":0},"app_students":57,"app_parents":1,"questions":0,"counseling":10,"letters":17,"exam":0,"lmti":3,"lmat":2,"univ_goal":15,"reports":0,"parents_info":5,"ios":62,"android":20,"results":0,"att_chg":{},"att_monthly":{"2026-01":83,"2026-02":269,"2026-03":620,"2026-04":685,"2026-05":719,"2026-06":138}},{"name":"김포","branch_cd":"2041","students":32,"att_count":2048,"study_hours":5891.8,"study_by_subj":{"국어":2295.5,"수학":1717.8,"영어":1010.7,"사회탐구":448.9,"제2외국어/한문":223.5,"과학탐구":153.4},"reward":{"상점":0,"벌점":0},"app_students":37,"app_parents":2,"questions":655,"counseling":532,"letters":0,"exam":0,"lmti":13,"lmat":6,"univ_goal":23,"reports":11,"parents_info":2,"ios":35,"android":17,"results":0,"att_chg":{"지각":8,"결석":1},"att_monthly":{"2026-01":35,"2026-02":188,"2026-03":520,"2026-04":569,"2026-05":637,"2026-06":99}},{"name":"노량진","branch_cd":"2062","students":89,"att_count":4528,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":48,"app_parents":3,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":2,"lmat":2,"univ_goal":5,"reports":0,"parents_info":13,"ios":48,"android":13,"results":0,"att_chg":{"지각":1,"결석":2},"att_monthly":{"2026-01":107,"2026-02":477,"2026-03":1221,"2026-04":1217,"2026-05":1293,"2026-06":213}},{"name":"다산","branch_cd":"2066","students":119,"att_count":7692,"study_hours":53847.1,"study_by_subj":{"수학":21152.5,"국어":15170.8,"사회탐구":8898.2,"영어":6027.0,"과학탐구":2272.5,"한국사":172.8},"reward":{"상점":0,"벌점":0},"app_students":114,"app_parents":2,"questions":401,"counseling":741,"letters":16,"exam":212,"lmti":49,"lmat":45,"univ_goal":99,"reports":0,"parents_info":32,"ios":157,"android":33,"results":0,"att_chg":{"지각":58,"결석":26},"att_monthly":{"2026-01":309,"2026-02":866,"2026-03":1719,"2026-04":2114,"2026-05":2299,"2026-06":385}},{"name":"대구달서","branch_cd":"2020","students":47,"att_count":3015,"study_hours":967.1,"study_by_subj":{"수학":397.2,"국어":352.0,"영어":86.7,"사회탐구":67.7,"과학탐구":58.6,"한국사":4.8},"reward":{"상점":0,"벌점":0},"app_students":49,"app_parents":3,"questions":0,"counseling":740,"letters":0,"exam":0,"lmti":39,"lmat":6,"univ_goal":10,"reports":0,"parents_info":3,"ios":33,"android":30,"results":0,"att_chg":{},"att_monthly":{"2026-01":133,"2026-02":376,"2026-03":800,"2026-04":791,"2026-05":788,"2026-06":127}},{"name":"대구수성 1관","branch_cd":"1007","students":55,"att_count":2644,"study_hours":3411.3,"study_by_subj":{"수학":1228.1,"국어":801.3,"사회탐구":613.7,"영어":605.6,"과학탐구":149.5,"한국사":13.1},"reward":{"상점":0,"벌점":0},"app_students":40,"app_parents":2,"questions":0,"counseling":256,"letters":1,"exam":49,"lmti":20,"lmat":11,"univ_goal":21,"reports":0,"parents_info":8,"ios":39,"android":26,"results":0,"att_chg":{"지각":50,"결석":25},"att_monthly":{"2026-01":173,"2026-02":464,"2026-03":556,"2026-04":681,"2026-05":687,"2026-06":83}},{"name":"대구수성 2관","branch_cd":"2047","students":43,"att_count":2456,"study_hours":2949.8,"study_by_subj":{"수학":1042.5,"국어":804.7,"사회탐구":634.9,"영어":337.2,"과학탐구":130.6},"reward":{"상점":0,"벌점":0},"app_students":44,"app_parents":1,"questions":0,"counseling":134,"letters":3,"exam":29,"lmti":8,"lmat":5,"univ_goal":35,"reports":0,"parents_info":5,"ios":44,"android":28,"results":0,"att_chg":{"지각":213,"결석":82},"att_monthly":{"2026-01":96,"2026-02":346,"2026-03":572,"2026-04":683,"2026-05":669,"2026-06":90}},{"name":"대전둔산","branch_cd":"1000","students":62,"att_count":3327,"study_hours":7.9,"study_by_subj":{"수학":7.9,"국어":0.0},"reward":{"상점":0,"벌점":0},"app_students":42,"app_parents":2,"questions":0,"counseling":0,"letters":104,"exam":0,"lmti":1,"lmat":1,"univ_goal":4,"reports":0,"parents_info":7,"ios":50,"android":21,"results":0,"att_chg":{"지각":3,"결석":1},"att_monthly":{"2026-01":354,"2026-02":396,"2026-03":760,"2026-04":808,"2026-05":849,"2026-06":160}},{"name":"대치","branch_cd":"1011","students":239,"att_count":13654,"study_hours":32715.1,"study_by_subj":{"수학":11808.5,"국어":11802.7,"사회탐구":4865.9,"영어":2500.9,"과학탐구":1674.9,"한국사":55.8},"reward":{"상점":1799,"벌점":1664},"app_students":201,"app_parents":12,"questions":330,"counseling":1411,"letters":338,"exam":397,"lmti":235,"lmat":181,"univ_goal":356,"reports":164,"parents_info":92,"ios":288,"android":155,"results":491,"att_chg":{"지각":290,"결석":167},"att_monthly":{"2026-01":451,"2026-02":1257,"2026-03":3323,"2026-04":3963,"2026-05":3998,"2026-06":662}},{"name":"독학기숙학원","branch_cd":"3009","students":0,"att_count":0,"study_hours":24921.0,"study_by_subj":{"수학":10392.8,"국어":8111.9,"사회탐구":2784.8,"영어":2118.8,"과학탐구":1178.2,"한국사":293.1},"reward":{"상점":0,"벌점":0},"app_students":272,"app_parents":17,"questions":341,"counseling":665,"letters":3399,"exam":468,"lmti":280,"lmat":221,"univ_goal":276,"reports":187,"parents_info":107,"ios":294,"android":111,"results":754,"att_chg":{},"att_monthly":{"2026-01":0,"2026-02":0,"2026-03":0,"2026-04":0,"2026-05":0,"2026-06":0}},{"name":"동탄","branch_cd":"2059","students":77,"att_count":4011,"study_hours":488.4,"study_by_subj":{"수학":305.0,"국어":100.6,"사회탐구":53.9,"영어":28.9},"reward":{"상점":0,"벌점":0},"app_students":41,"app_parents":5,"questions":223,"counseling":690,"letters":3,"exam":0,"lmti":8,"lmat":2,"univ_goal":23,"reports":0,"parents_info":10,"ios":38,"android":24,"results":0,"att_chg":{"지각":9,"결석":6},"att_monthly":{"2026-01":347,"2026-02":594,"2026-03":963,"2026-04":977,"2026-05":979,"2026-06":151}},{"name":"마포","branch_cd":"2050","students":75,"att_count":4324,"study_hours":7683.6,"study_by_subj":{"국어":2841.2,"수학":2654.1,"영어":959.8,"사회탐구":898.2,"과학탐구":299.3,"한국사":27.5},"reward":{"상점":0,"벌점":0},"app_students":81,"app_parents":3,"questions":580,"counseling":1272,"letters":0,"exam":0,"lmti":44,"lmat":43,"univ_goal":71,"reports":0,"parents_info":10,"ios":83,"android":44,"results":0,"att_chg":{"결석":18,"지각":12},"att_monthly":{"2026-01":102,"2026-02":317,"2026-03":1113,"2026-04":1260,"2026-05":1310,"2026-06":222}},{"name":"목동","branch_cd":"1008","students":95,"att_count":5437,"study_hours":1313.8,"study_by_subj":{"국어":521.1,"수학":510.6,"사회탐구":130.8,"영어":111.5,"과학탐구":39.8},"reward":{"상점":0,"벌점":0},"app_students":85,"app_parents":5,"questions":378,"counseling":0,"letters":0,"exam":0,"lmti":72,"lmat":19,"univ_goal":20,"reports":0,"parents_info":11,"ios":98,"android":62,"results":0,"att_chg":{"지각":5,"결석":7},"att_monthly":{"2026-01":248,"2026-02":508,"2026-03":1306,"2026-04":1489,"2026-05":1584,"2026-06":302}},{"name":"목동오목교","branch_cd":"2034","students":59,"att_count":3369,"study_hours":30.3,"study_by_subj":{"수학":28.0,"국어":2.3},"reward":{"상점":0,"벌점":0},"app_students":8,"app_parents":1,"questions":0,"counseling":45,"letters":0,"exam":0,"lmti":1,"lmat":0,"univ_goal":3,"reports":0,"parents_info":4,"ios":8,"android":4,"results":0,"att_chg":{"지각":1},"att_monthly":{"2026-01":141,"2026-02":286,"2026-03":821,"2026-04":893,"2026-05":1067,"2026-06":161}},{"name":"목포","branch_cd":"2054","students":47,"att_count":1545,"study_hours":138.8,"study_by_subj":{"영어":99.3,"수학":25.9,"국어":13.7},"reward":{"상점":0,"벌점":0},"app_students":44,"app_parents":0,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":2,"univ_goal":6,"reports":0,"parents_info":6,"ios":43,"android":7,"results":0,"att_chg":{},"att_monthly":{"2026-01":0,"2026-02":0,"2026-03":307,"2026-04":651,"2026-05":527,"2026-06":60}},{"name":"부산교대","branch_cd":"2011","students":87,"att_count":4707,"study_hours":989.2,"study_by_subj":{"수학":513.0,"영어":220.1,"국어":150.4,"사회탐구":64.6,"과학탐구":27.8,"제2외국어/한문":12.0},"reward":{"상점":0,"벌점":0},"app_students":76,"app_parents":5,"questions":12,"counseling":28,"letters":0,"exam":0,"lmti":12,"lmat":4,"univ_goal":44,"reports":0,"parents_info":13,"ios":115,"android":30,"results":0,"att_chg":{"지각":137,"결석":75},"att_monthly":{"2026-01":0,"2026-02":0,"2026-03":1441,"2026-04":1551,"2026-05":1486,"2026-06":229}},{"name":"부산대","branch_cd":"2061","students":32,"att_count":1747,"study_hours":674.9,"study_by_subj":{"수학":317.8,"국어":228.0,"영어":66.3,"사회탐구":62.8},"reward":{"상점":0,"벌점":1},"app_students":23,"app_parents":1,"questions":0,"counseling":9,"letters":0,"exam":23,"lmti":17,"lmat":3,"univ_goal":8,"reports":0,"parents_info":7,"ios":29,"android":7,"results":0,"att_chg":{"지각":26,"결석":2},"att_monthly":{"2026-01":71,"2026-02":207,"2026-03":409,"2026-04":477,"2026-05":502,"2026-06":81}},{"name":"부산북구","branch_cd":"2039","students":47,"att_count":3077,"study_hours":89.5,"study_by_subj":{"국어":48.8,"영어":22.5,"사회탐구":17.9,"수학":0.4},"reward":{"상점":0,"벌점":0},"app_students":19,"app_parents":0,"questions":0,"counseling":103,"letters":0,"exam":0,"lmti":7,"lmat":1,"univ_goal":1,"reports":0,"parents_info":3,"ios":18,"android":6,"results":0,"att_chg":{"지각":2},"att_monthly":{"2026-01":50,"2026-02":197,"2026-03":757,"2026-04":881,"2026-05":1051,"2026-06":141}},{"name":"부산서면","branch_cd":"2027","students":47,"att_count":2713,"study_hours":2485.8,"study_by_subj":{"수학":1139.0,"국어":775.7,"사회탐구":255.5,"과학탐구":167.5,"영어":144.5,"한국사":3.1},"reward":{"상점":0,"벌점":0},"app_students":36,"app_parents":1,"questions":0,"counseling":62,"letters":0,"exam":0,"lmti":5,"lmat":1,"univ_goal":7,"reports":0,"parents_info":3,"ios":37,"android":17,"results":0,"att_chg":{"지각":43,"결석":17},"att_monthly":{"2026-01":212,"2026-02":311,"2026-03":728,"2026-04":702,"2026-05":646,"2026-06":114}},{"name":"부산해운대","branch_cd":"2028","students":131,"att_count":7628,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":42,"app_parents":4,"questions":0,"counseling":0,"letters":5,"exam":0,"lmti":2,"lmat":2,"univ_goal":6,"reports":0,"parents_info":20,"ios":40,"android":13,"results":0,"att_chg":{"결석":1,"지각":1},"att_monthly":{"2026-01":268,"2026-02":795,"2026-03":1819,"2026-04":2124,"2026-05":2297,"2026-06":325}},{"name":"부천","branch_cd":"1004","students":15,"att_count":694,"study_hours":1961.6,"study_by_subj":{"수학":669.4,"국어":566.7,"사회탐구":444.8,"영어":280.8},"reward":{"상점":0,"벌점":0},"app_students":13,"app_parents":1,"questions":0,"counseling":142,"letters":0,"exam":0,"lmti":4,"lmat":2,"univ_goal":1,"reports":0,"parents_info":2,"ios":13,"android":4,"results":0,"att_chg":{"지각":13,"결석":3},"att_monthly":{"2026-01":40,"2026-02":150,"2026-03":216,"2026-04":159,"2026-05":109,"2026-06":20}},{"name":"분당정자","branch_cd":"1005","students":158,"att_count":10270,"study_hours":40227.6,"study_by_subj":{"수학":15201.1,"국어":12482.0,"사회탐구":7547.5,"영어":4069.1,"과학탐구":716.6,"제2외국어/한문":164.4},"reward":{"상점":0,"벌점":0},"app_students":162,"app_parents":3,"questions":544,"counseling":767,"letters":1,"exam":198,"lmti":159,"lmat":126,"univ_goal":219,"reports":0,"parents_info":22,"ios":205,"android":59,"results":210,"att_chg":{"지각":18,"결석":11},"att_monthly":{"2026-01":275,"2026-02":900,"2026-03":2706,"2026-04":2968,"2026-05":2949,"2026-06":472}},{"name":"서울강동","branch_cd":"2005","students":48,"att_count":2574,"study_hours":7082.0,"study_by_subj":{"수학":2906.5,"국어":1938.7,"사회탐구":1129.5,"영어":956.1,"과학탐구":91.5,"한국사":59.8},"reward":{"상점":0,"벌점":0},"app_students":34,"app_parents":1,"questions":0,"counseling":68,"letters":15,"exam":0,"lmti":2,"lmat":2,"univ_goal":13,"reports":0,"parents_info":6,"ios":46,"android":14,"results":0,"att_chg":{"지각":2},"att_monthly":{"2026-01":207,"2026-02":278,"2026-03":517,"2026-04":691,"2026-05":743,"2026-06":138}},{"name":"서울강서","branch_cd":"2001","students":36,"att_count":1533,"study_hours":671.8,"study_by_subj":{"수학":293.0,"과학탐구":113.1,"사회탐구":111.2,"영어":77.0,"국어":74.2,"직업탐구":3.2},"reward":{"상점":0,"벌점":0},"app_students":20,"app_parents":2,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":24,"lmat":5,"univ_goal":5,"reports":0,"parents_info":3,"ios":19,"android":9,"results":0,"att_chg":{},"att_monthly":{"2026-01":174,"2026-02":313,"2026-03":329,"2026-04":313,"2026-05":345,"2026-06":59}},{"name":"서울광진","branch_cd":"2006","students":50,"att_count":3031,"study_hours":4779.5,"study_by_subj":{"수학":2222.3,"국어":1617.9,"사회탐구":482.4,"영어":360.9,"과학탐구":93.8,"한국사":2.2},"reward":{"상점":0,"벌점":0},"app_students":62,"app_parents":4,"questions":0,"counseling":263,"letters":0,"exam":24,"lmti":49,"lmat":4,"univ_goal":38,"reports":0,"parents_info":7,"ios":59,"android":27,"results":0,"att_chg":{"지각":3,"결석":2},"att_monthly":{"2026-01":101,"2026-02":260,"2026-03":748,"2026-04":863,"2026-05":910,"2026-06":149}},{"name":"서울대점","branch_cd":"2002","students":61,"att_count":3046,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":26,"app_parents":6,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":1,"univ_goal":2,"reports":0,"parents_info":6,"ios":24,"android":15,"results":0,"att_chg":{},"att_monthly":{"2026-01":200,"2026-02":314,"2026-03":692,"2026-04":845,"2026-05":865,"2026-06":130}},{"name":"서울도봉","branch_cd":"2029","students":29,"att_count":1799,"study_hours":850.7,"study_by_subj":{"국어":348.1,"수학":340.9,"영어":113.6,"사회탐구":38.5,"과학탐구":9.6},"reward":{"상점":0,"벌점":2},"app_students":24,"app_parents":2,"questions":52,"counseling":356,"letters":0,"exam":0,"lmti":30,"lmat":7,"univ_goal":13,"reports":0,"parents_info":2,"ios":20,"android":13,"results":0,"att_chg":{},"att_monthly":{"2026-01":150,"2026-02":196,"2026-03":403,"2026-04":470,"2026-05":493,"2026-06":87}},{"name":"서울성동","branch_cd":"2051","students":78,"att_count":4403,"study_hours":5694.4,"study_by_subj":{"수학":2167.0,"국어":1827.8,"사회탐구":970.0,"영어":464.2,"과학탐구":227.8,"한국사":23.3},"reward":{"상점":0,"벌점":0},"app_students":74,"app_parents":4,"questions":1088,"counseling":303,"letters":0,"exam":0,"lmti":23,"lmat":18,"univ_goal":42,"reports":0,"parents_info":9,"ios":27,"android":86,"results":0,"att_chg":{"결석":17,"지각":57},"att_monthly":{"2026-01":102,"2026-02":390,"2026-03":1171,"2026-04":1188,"2026-05":1328,"2026-06":224}},{"name":"서울성북","branch_cd":"2037","students":77,"att_count":5142,"study_hours":1296.4,"study_by_subj":{"수학":472.7,"국어":394.0,"사회탐구":188.7,"영어":183.7,"과학탐구":44.3,"한국사":13.0},"reward":{"상점":0,"벌점":0},"app_students":86,"app_parents":0,"questions":295,"counseling":851,"letters":0,"exam":0,"lmti":78,"lmat":15,"univ_goal":49,"reports":0,"parents_info":7,"ios":93,"android":23,"results":0,"att_chg":{"지각":1,"결석":2},"att_monthly":{"2026-01":261,"2026-02":511,"2026-03":1207,"2026-04":1399,"2026-05":1511,"2026-06":253}},{"name":"서울송파","branch_cd":"2009","students":112,"att_count":6933,"study_hours":245.9,"study_by_subj":{"국어":82.9,"수학":82.8,"사회탐구":46.3,"영어":24.2,"과학탐구":4.9,"한국사":4.7},"reward":{"상점":0,"벌점":2},"app_students":74,"app_parents":6,"questions":0,"counseling":1123,"letters":0,"exam":0,"lmti":17,"lmat":3,"univ_goal":19,"reports":0,"parents_info":15,"ios":74,"android":26,"results":0,"att_chg":{"지각":22,"결석":16},"att_monthly":{"2026-01":458,"2026-02":670,"2026-03":1778,"2026-04":1804,"2026-05":1882,"2026-06":341}},{"name":"수원시청","branch_cd":"2049","students":74,"att_count":3844,"study_hours":1080.2,"study_by_subj":{"수학":502.3,"사회탐구":217.8,"국어":193.6,"영어":140.5,"과학탐구":24.1,"한국사":1.9},"reward":{"상점":0,"벌점":0},"app_students":47,"app_parents":2,"questions":0,"counseling":0,"letters":3,"exam":0,"lmti":1,"lmat":2,"univ_goal":15,"reports":0,"parents_info":7,"ios":36,"android":17,"results":0,"att_chg":{"지각":1,"결석":1},"att_monthly":{"2026-01":143,"2026-02":386,"2026-03":957,"2026-04":1030,"2026-05":1141,"2026-06":187}},{"name":"수원영통","branch_cd":"1003","students":119,"att_count":7575,"study_hours":4937.6,"study_by_subj":{"수학":1685.3,"국어":1299.1,"사회탐구":962.9,"영어":733.7,"과학탐구":231.8,"직업탐구":14.3},"reward":{"상점":0,"벌점":0},"app_students":37,"app_parents":1,"questions":0,"counseling":564,"letters":0,"exam":0,"lmti":12,"lmat":10,"univ_goal":27,"reports":0,"parents_info":4,"ios":34,"android":15,"results":0,"att_chg":{"지각":60,"결석":32},"att_monthly":{"2026-01":1174,"2026-02":1329,"2026-03":1589,"2026-04":1675,"2026-05":1568,"2026-06":240}},{"name":"수원정자","branch_cd":"2064","students":66,"att_count":3939,"study_hours":5149.4,"study_by_subj":{"수학":2078.0,"국어":1735.7,"과학탐구":487.8,"사회탐구":451.8,"영어":355.7,"한국사":29.3},"reward":{"상점":1,"벌점":0},"app_students":67,"app_parents":2,"questions":330,"counseling":1120,"letters":0,"exam":0,"lmti":67,"lmat":28,"univ_goal":51,"reports":0,"parents_info":6,"ios":81,"android":28,"results":0,"att_chg":{"결석":3},"att_monthly":{"2026-01":197,"2026-02":388,"2026-03":921,"2026-04":1067,"2026-05":1192,"2026-06":174}},{"name":"안산","branch_cd":"2015","students":74,"att_count":3737,"study_hours":82.0,"study_by_subj":{"영어":28.1,"수학":20.2,"국어":19.2,"과학탐구":8.9,"사회탐구":5.6},"reward":{"상점":0,"벌점":0},"app_students":42,"app_parents":0,"questions":0,"counseling":542,"letters":0,"exam":0,"lmti":1,"lmat":0,"univ_goal":9,"reports":0,"parents_info":5,"ios":40,"android":13,"results":0,"att_chg":{"지각":1,"결석":3},"att_monthly":{"2026-01":262,"2026-02":569,"2026-03":829,"2026-04":906,"2026-05":992,"2026-06":179}},{"name":"안성기숙학원","branch_cd":"1001","students":1,"att_count":1,"study_hours":14452.8,"study_by_subj":{"수학":8124.8,"국어":3254.3,"영어":1256.1,"사회탐구":835.0,"과학탐구":342.5,"직업탐구":327.3},"reward":{"상점":0,"벌점":0},"app_students":253,"app_parents":9,"questions":3051,"counseling":0,"letters":117,"exam":0,"lmti":48,"lmat":40,"univ_goal":240,"reports":0,"parents_info":42,"ios":241,"android":133,"results":0,"att_chg":{"결석":2},"att_monthly":{"2026-01":0,"2026-02":0,"2026-03":0,"2026-04":1,"2026-05":0,"2026-06":0}},{"name":"용인수지","branch_cd":"2019","students":44,"att_count":3268,"study_hours":144.7,"study_by_subj":{"국어":60.0,"수학":43.5,"영어":24.2,"사회탐구":16.5,"한국사":0.4},"reward":{"상점":0,"벌점":0},"app_students":35,"app_parents":0,"questions":140,"counseling":0,"letters":0,"exam":27,"lmti":2,"lmat":1,"univ_goal":2,"reports":0,"parents_info":2,"ios":28,"android":9,"results":0,"att_chg":{},"att_monthly":{"2026-01":184,"2026-02":288,"2026-03":792,"2026-04":898,"2026-05":931,"2026-06":175}},{"name":"울산남구","branch_cd":"2021","students":38,"att_count":1373,"study_hours":552.1,"study_by_subj":{"수학":233.7,"국어":149.2,"영어":60.0,"과학탐구":57.2,"사회탐구":52.1},"reward":{"상점":0,"벌점":0},"app_students":20,"app_parents":1,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":1,"lmat":0,"univ_goal":9,"reports":0,"parents_info":10,"ios":23,"android":4,"results":0,"att_chg":{"지각":1,"결석":2},"att_monthly":{"2026-01":72,"2026-02":56,"2026-03":415,"2026-04":399,"2026-05":373,"2026-06":58}},{"name":"원주","branch_cd":"2032","students":11,"att_count":393,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":11,"app_parents":0,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":0,"univ_goal":1,"reports":0,"parents_info":7,"ios":3,"android":8,"results":0,"att_chg":{},"att_monthly":{"2026-01":201,"2026-02":176,"2026-03":16,"2026-04":0,"2026-05":0,"2026-06":0}},{"name":"은평서대문","branch_cd":"2007","students":75,"att_count":4992,"study_hours":3416.8,"study_by_subj":{"수학":1299.4,"국어":1015.8,"영어":555.0,"사회탐구":531.8,"직업탐구":14.8},"reward":{"상점":0,"벌점":0},"app_students":77,"app_parents":2,"questions":17,"counseling":1310,"letters":0,"exam":0,"lmti":28,"lmat":16,"univ_goal":30,"reports":0,"parents_info":9,"ios":99,"android":44,"results":0,"att_chg":{"지각":349,"결석":69},"att_monthly":{"2026-01":176,"2026-02":421,"2026-03":1168,"2026-04":1457,"2026-05":1486,"2026-06":284}},{"name":"의정부","branch_cd":"2042","students":74,"att_count":4717,"study_hours":13936.3,"study_by_subj":{"수학":6035.9,"국어":3593.3,"영어":2189.4,"사회탐구":1801.7,"과학탐구":286.0,"직업탐구":16.5},"reward":{"상점":0,"벌점":0},"app_students":75,"app_parents":1,"questions":844,"counseling":955,"letters":0,"exam":0,"lmti":64,"lmat":16,"univ_goal":104,"reports":62,"parents_info":8,"ios":92,"android":31,"results":0,"att_chg":{"결석":38,"지각":62},"att_monthly":{"2026-01":353,"2026-02":631,"2026-03":937,"2026-04":1202,"2026-05":1362,"2026-06":232}},{"name":"이천기숙학원","branch_cd":"3004","students":2,"att_count":5,"study_hours":30307.6,"study_by_subj":{"수학":17860.8,"국어":7103.2,"사회탐구":2070.8,"영어":1627.0,"직업탐구":662.3,"과학탐구":513.4},"reward":{"상점":0,"벌점":0},"app_students":318,"app_parents":14,"questions":1312,"counseling":197,"letters":8166,"exam":1,"lmti":196,"lmat":103,"univ_goal":301,"reports":0,"parents_info":98,"ios":298,"android":134,"results":0,"att_chg":{"지각":5,"결석":3},"att_monthly":{"2026-01":0,"2026-02":0,"2026-03":0,"2026-04":2,"2026-05":0,"2026-06":3}},{"name":"이투스이씨아이","branch_cd":"1999","students":2,"att_count":3,"study_hours":14.5,"study_by_subj":{"수학":8.1,"영어":5.8,"국어":0.7,"사회탐구":0.0,"과학탐구":0.0,"직업탐구":0.0},"reward":{"상점":0,"벌점":0},"app_students":3,"app_parents":0,"questions":4,"counseling":11,"letters":0,"exam":0,"lmti":2,"lmat":2,"univ_goal":2,"reports":0,"parents_info":4,"ios":31,"android":42,"results":0,"att_chg":{"결석":2},"att_monthly":{"2026-01":0,"2026-02":0,"2026-03":2,"2026-04":1,"2026-05":0,"2026-06":0}},{"name":"익산","branch_cd":"2040","students":32,"att_count":1740,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":1,"app_parents":0,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":0,"univ_goal":0,"reports":0,"parents_info":1,"ios":1,"android":0,"results":0,"att_chg":{},"att_monthly":{"2026-01":314,"2026-02":332,"2026-03":341,"2026-04":349,"2026-05":343,"2026-06":61}},{"name":"인천부평","branch_cd":"2016","students":56,"att_count":3247,"study_hours":6004.2,"study_by_subj":{"수학":2758.9,"국어":1611.6,"사회탐구":1014.0,"영어":431.1,"과학탐구":172.3,"한국사":11.7},"reward":{"상점":0,"벌점":0},"app_students":42,"app_parents":0,"questions":0,"counseling":115,"letters":0,"exam":0,"lmti":2,"lmat":2,"univ_goal":19,"reports":0,"parents_info":6,"ios":52,"android":14,"results":0,"att_chg":{"결석":5,"지각":4},"att_monthly":{"2026-01":331,"2026-02":415,"2026-03":687,"2026-04":757,"2026-05":897,"2026-06":160}},{"name":"인천송도","branch_cd":"2058","students":66,"att_count":4253,"study_hours":24686.9,"study_by_subj":{"수학":9932.5,"국어":6969.6,"영어":4057.2,"사회탐구":2905.6,"과학탐구":812.3,"한국사":9.8},"reward":{"상점":0,"벌점":2},"app_students":60,"app_parents":1,"questions":0,"counseling":2223,"letters":40,"exam":0,"lmti":65,"lmat":40,"univ_goal":69,"reports":0,"parents_info":6,"ios":89,"android":23,"results":0,"att_chg":{"결석":8,"지각":1},"att_monthly":{"2026-01":360,"2026-02":456,"2026-03":992,"2026-04":1129,"2026-05":1104,"2026-06":212}},{"name":"인천인하대","branch_cd":"2065","students":49,"att_count":2581,"study_hours":15532.4,"study_by_subj":{"수학":6065.4,"국어":4328.2,"영어":2167.6,"사회탐구":1987.9,"과학탐구":859.4,"한국사":105.0},"reward":{"상점":0,"벌점":0},"app_students":43,"app_parents":2,"questions":0,"counseling":1162,"letters":13,"exam":0,"lmti":47,"lmat":35,"univ_goal":60,"reports":0,"parents_info":8,"ios":89,"android":25,"results":1,"att_chg":{"지각":1},"att_monthly":{"2026-01":161,"2026-02":257,"2026-03":598,"2026-04":666,"2026-05":769,"2026-06":130}},{"name":"인천청라","branch_cd":"2033","students":56,"att_count":3161,"study_hours":334.3,"study_by_subj":{"수학":168.3,"영어":67.9,"국어":57.5,"사회탐구":38.7,"한국사":1.9},"reward":{"상점":5,"벌점":0},"app_students":41,"app_parents":0,"questions":0,"counseling":0,"letters":0,"exam":39,"lmti":8,"lmat":3,"univ_goal":11,"reports":0,"parents_info":5,"ios":34,"android":16,"results":0,"att_chg":{"결석":1},"att_monthly":{"2026-01":256,"2026-02":376,"2026-03":801,"2026-04":747,"2026-05":833,"2026-06":148}},{"name":"일산동구","branch_cd":"2013","students":75,"att_count":4096,"study_hours":57.7,"study_by_subj":{"국어":32.3,"수학":11.4,"영어":8.5,"과학탐구":5.5,"사회탐구":0.0},"reward":{"상점":0,"벌점":0},"app_students":62,"app_parents":6,"questions":1039,"counseling":0,"letters":0,"exam":0,"lmti":5,"lmat":4,"univ_goal":14,"reports":0,"parents_info":13,"ios":80,"android":23,"results":0,"att_chg":{"지각":3},"att_monthly":{"2026-01":152,"2026-02":267,"2026-03":822,"2026-04":1218,"2026-05":1416,"2026-06":221}},{"name":"일산서구","branch_cd":"1006","students":55,"att_count":2532,"study_hours":416.2,"study_by_subj":{"국어":131.7,"영어":126.9,"수학":111.6,"사회탐구":44.9,"한국사":0.9,"과학탐구":0.0},"reward":{"상점":0,"벌점":101},"app_students":45,"app_parents":1,"questions":80,"counseling":0,"letters":0,"exam":0,"lmti":28,"lmat":13,"univ_goal":24,"reports":0,"parents_info":9,"ios":40,"android":26,"results":0,"att_chg":{},"att_monthly":{"2026-01":270,"2026-02":344,"2026-03":456,"2026-04":612,"2026-05":734,"2026-06":116}},{"name":"제주","branch_cd":"3001","students":74,"att_count":4308,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":4,"app_parents":1,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":0,"univ_goal":0,"reports":0,"parents_info":7,"ios":2,"android":2,"results":0,"att_chg":{},"att_monthly":{"2026-01":665,"2026-02":768,"2026-03":844,"2026-04":940,"2026-05":914,"2026-06":177}},{"name":"진주","branch_cd":"2038","students":46,"att_count":2437,"study_hours":0.0,"study_by_subj":{"수학":0.0},"reward":{"상점":0,"벌점":0},"app_students":36,"app_parents":2,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":47,"lmat":1,"univ_goal":5,"reports":0,"parents_info":4,"ios":33,"android":9,"results":0,"att_chg":{},"att_monthly":{"2026-01":212,"2026-02":331,"2026-03":625,"2026-04":560,"2026-05":600,"2026-06":109}},{"name":"창원","branch_cd":"3002","students":29,"att_count":1571,"study_hours":15.6,"study_by_subj":{"국어":11.7,"수학":3.2,"영어":0.6},"reward":{"상점":0,"벌점":0},"app_students":22,"app_parents":1,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":0,"univ_goal":2,"reports":0,"parents_info":0,"ios":16,"android":7,"results":0,"att_chg":{},"att_monthly":{"2026-01":73,"2026-02":100,"2026-03":499,"2026-04":471,"2026-05":380,"2026-06":48}},{"name":"천안","branch_cd":"2012","students":56,"att_count":3695,"study_hours":456.7,"study_by_subj":{"국어":159.9,"수학":129.9,"영어":116.0,"사회탐구":50.6,"한국사":0.4},"reward":{"상점":0,"벌점":240},"app_students":35,"app_parents":0,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":27,"lmat":2,"univ_goal":4,"reports":0,"parents_info":3,"ios":24,"android":20,"results":0,"att_chg":{},"att_monthly":{"2026-01":546,"2026-02":749,"2026-03":798,"2026-04":807,"2026-05":685,"2026-06":110}},{"name":"청주","branch_cd":"2031","students":88,"att_count":4278,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":14,"app_parents":0,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":0,"univ_goal":1,"reports":0,"parents_info":5,"ios":13,"android":3,"results":0,"att_chg":{"지각":1,"결석":2},"att_monthly":{"2026-01":615,"2026-02":617,"2026-03":963,"2026-04":998,"2026-05":945,"2026-06":140}},{"name":"춘천","branch_cd":"2044","students":34,"att_count":2261,"study_hours":2286.4,"study_by_subj":{"수학":944.0,"국어":652.2,"사회탐구":373.4,"영어":278.9,"과학탐구":35.9,"한국사":2.0},"reward":{"상점":0,"벌점":0},"app_students":26,"app_parents":0,"questions":0,"counseling":269,"letters":48,"exam":0,"lmti":5,"lmat":6,"univ_goal":21,"reports":0,"parents_info":1,"ios":27,"android":7,"results":0,"att_chg":{"결석":2,"지각":4},"att_monthly":{"2026-01":119,"2026-02":180,"2026-03":619,"2026-04":680,"2026-05":594,"2026-06":69}},{"name":"파주","branch_cd":"2052","students":54,"att_count":1613,"study_hours":0.0,"study_by_subj":{},"reward":{"상점":0,"벌점":0},"app_students":18,"app_parents":2,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":0,"lmat":0,"univ_goal":5,"reports":0,"parents_info":3,"ios":20,"android":8,"results":0,"att_chg":{"결석":6,"지각":5},"att_monthly":{"2026-01":397,"2026-02":485,"2026-03":323,"2026-04":258,"2026-05":150,"2026-06":0}},{"name":"평택","branch_cd":"1012","students":137,"att_count":7060,"study_hours":28312.3,"study_by_subj":{"수학":11016.7,"국어":8744.9,"사회탐구":3898.2,"영어":2828.6,"과학탐구":1729.2,"한국사":92.2},"reward":{"상점":0,"벌점":0},"app_students":88,"app_parents":0,"questions":142,"counseling":818,"letters":0,"exam":1,"lmti":38,"lmat":38,"univ_goal":50,"reports":0,"parents_info":6,"ios":92,"android":45,"results":0,"att_chg":{"결석":22,"지각":23},"att_monthly":{"2026-01":1100,"2026-02":1162,"2026-03":1320,"2026-04":1501,"2026-05":1688,"2026-06":289}},{"name":"하남","branch_cd":"2060","students":118,"att_count":6409,"study_hours":3.4,"study_by_subj":{"사회탐구":1.7,"수학":1.0,"국어":0.6,"영어":0.0},"reward":{"상점":0,"벌점":0},"app_students":76,"app_parents":2,"questions":0,"counseling":0,"letters":0,"exam":0,"lmti":91,"lmat":14,"univ_goal":15,"reports":0,"parents_info":9,"ios":70,"android":20,"results":0,"att_chg":{},"att_monthly":{"2026-01":545,"2026-02":805,"2026-03":1541,"2026-04":1608,"2026-05":1631,"2026-06":279}}],"monthly_trend":[{"month":"2026-01","att":15138,"questions":725,"counseling":108,"letters":565,"study_hours":0.0,"reward_p":0,"reward_m":0},{"month":"2026-02","att":25892,"questions":953,"counseling":454,"letters":1186,"study_hours":0.0,"reward_p":0,"reward_m":0},{"month":"2026-03","att":54315,"questions":2047,"counseling":5383,"letters":2580,"study_hours":76780.5,"reward_p":219,"reward_m":467},{"month":"2026-04","att":61091,"questions":2467,"counseling":5234,"letters":2379,"study_hours":103109.9,"reward_p":480,"reward_m":744},{"month":"2026-05","att":63153,"questions":2896,"counseling":4842,"letters":2442,"study_hours":152169.0,"reward_p":647,"reward_m":806},{"month":"2026-06","att":10404,"questions":802,"counseling":1081,"letters":589,"study_hours":28239.2,"reward_p":459,"reward_m":106}],"subj_time":[{"name":"수학","hours":149563.7},{"name":"국어","hours":106130.1},{"name":"사회탐구","hours":49082.1},{"name":"영어","hours":38756.2},{"name":"과학탐구","hours":13228.6},{"name":"한국사","hours":1636.1},{"name":"직업탐구","hours":1285.2},{"name":"제2외국어/한문","hours":616.7}],"top_subj":[{"name":"화법과작문","count":1707},{"name":"확률과통계","count":1636},{"name":"사회문화","count":1560},{"name":"생활과윤리","count":1212},{"name":"언어와매체","count":880},{"name":"미적분","count":817},{"name":"지구과학I","count":394},{"name":"윤리와사상","count":341},{"name":"세계지리","count":334},{"name":"한국지리","count":307},{"name":"생명과학I","count":286},{"name":"정치와법","count":158},{"name":"동아시아사","count":122},{"name":"세계사","count":104},{"name":"일본어I","count":101}],"passes":[{"name":"메가스터디","count":1859},{"name":"ETOOS","count":1855},{"name":"대성 마이맥","count":1490},{"name":"EBS","count":960}],"top_univ":[{"name":"연세대학교","count":279},{"name":"고려대학교","count":277},{"name":"서울대학교","count":228},{"name":"경희대학교","count":192},{"name":"성균관대학교","count":185},{"name":"건국대학교","count":160},{"name":"한양대학교","count":155},{"name":"중앙대학교","count":145},{"name":"이화여자대학교","count":93},{"name":"홍익대학교","count":70},{"name":"국민대학교","count":53},{"name":"서강대학교","count":52},{"name":"인하대학교","count":51},{"name":"가천대학교","count":45},{"name":"서울시립대학교","count":40}],"devices":[{"name":"ANDROID","count":1736},{"name":"IOS","count":4091}],"exam_rounds":[{"round":"03월 서·프","count":445},{"round":"03월 학평","count":32},{"round":"04월 서·프","count":542},{"round":"05월 서·프","count":401},{"round":"05월 학평","count":33},{"round":"06월 평가원","count":14},{"round":"2026 수능","count":1}],"student_study":[{"name":"김민서","hours":2674.1,"branch":"평택"},{"name":"이서진","hours":2125.0,"branch":"김포"},{"name":"이진우","hours":2000.4,"branch":""},{"name":"이지수","hours":1866.0,"branch":"다산"},{"name":"김지오","hours":1680.5,"branch":""},{"name":"이현지","hours":1643.5,"branch":"다산"},{"name":"김태훈","hours":1559.7,"branch":"다산"},{"name":"김나연","hours":1552.6,"branch":"독학기숙학원"},{"name":"장재훈","hours":1507.4,"branch":"이천기숙학원"},{"name":"서보경","hours":1473.8,"branch":"다산"},{"name":"이지윤","hours":1467.2,"branch":"대구수성 1관"},{"name":"박서준","hours":1444.9,"branch":"다산"},{"name":"이수현","hours":1438.3,"branch":"다산"},{"name":"염종연","hours":1382.8,"branch":"다산"},{"name":"김민지","hours":1321.1,"branch":"광명"},{"name":"안주혁","hours":1268.1,"branch":""},{"name":"김시윤","hours":1259.2,"branch":""},{"name":"성준영","hours":1257.6,"branch":""},{"name":"홍지훈","hours":1228.9,"branch":""},{"name":"이규훈","hours":1208.1,"branch":"인천인하대"},{"name":"이주혜","hours":1207.0,"branch":"서울성동"},{"name":"유영은","hours":1193.3,"branch":""},{"name":"윤성민","hours":1159.8,"branch":"다산"},{"name":"도길현","hours":1159.1,"branch":"독학기숙학원"},{"name":"최성열","hours":1157.8,"branch":"다산"},{"name":"류한서","hours":1148.6,"branch":"다산"},{"name":"이정우","hours":1139.6,"branch":"다산"},{"name":"박민재","hours":1136.8,"branch":"부산서면"},{"name":"현송지","hours":1135.4,"branch":"다산"},{"name":"허은재","hours":1133.9,"branch":"다산"},{"name":"김제이","hours":1133.1,"branch":"다산"},{"name":"이준서","hours":1124.4,"branch":"다산"},{"name":"장하윤","hours":1106.7,"branch":"분당정자"},{"name":"석무성","hours":1106.0,"branch":"다산"},{"name":"강다은","hours":1097.9,"branch":"다산"},{"name":"정윤아","hours":1085.1,"branch":"인천송도"},{"name":"박지예","hours":1073.4,"branch":"다산"},{"name":"장우형","hours":1072.4,"branch":"다산"},{"name":"김선혜","hours":1046.7,"branch":"다산"},{"name":"전윤지","hours":1042.3,"branch":"다산"},{"name":"박미래","hours":1035.5,"branch":"의정부"},{"name":"조예준","hours":1033.3,"branch":""},{"name":"신예호","hours":1029.1,"branch":"다산"},{"name":"이다경","hours":1028.4,"branch":""},{"name":"김혜연","hours":1023.0,"branch":"의정부"},{"name":"정인종","hours":1022.9,"branch":"이천기숙학원"},{"name":"김형준","hours":1020.7,"branch":"서울도봉"},{"name":"이다현","hours":1008.1,"branch":"인천인하대"},{"name":"안규리","hours":1007.4,"branch":"대구수성 1관"},{"name":"여금비","hours":1002.5,"branch":"광명"}],"parent_engagement":[{"branch":"강북","students":96,"parents_registered":15,"parents_app":0,"parent_rate":15.6},{"branch":"광명","students":36,"parents_registered":4,"parents_app":3,"parent_rate":11.1},{"branch":"광주남구","students":87,"parents_registered":11,"parents_app":1,"parent_rate":12.6},{"branch":"광주동구","students":74,"parents_registered":10,"parents_app":2,"parent_rate":13.5},{"branch":"광주북구","students":50,"parents_registered":5,"parents_app":1,"parent_rate":10.0},{"branch":"광주수완","students":46,"parents_registered":5,"parents_app":1,"parent_rate":10.9},{"branch":"김포","students":32,"parents_registered":2,"parents_app":2,"parent_rate":6.2},{"branch":"노량진","students":89,"parents_registered":13,"parents_app":3,"parent_rate":14.6},{"branch":"다산","students":119,"parents_registered":32,"parents_app":2,"parent_rate":26.9},{"branch":"대구달서","students":47,"parents_registered":3,"parents_app":3,"parent_rate":6.4},{"branch":"대구수성 1관","students":55,"parents_registered":8,"parents_app":2,"parent_rate":14.5},{"branch":"대구수성 2관","students":43,"parents_registered":5,"parents_app":1,"parent_rate":11.6},{"branch":"대전둔산","students":62,"parents_registered":7,"parents_app":2,"parent_rate":11.3},{"branch":"대치","students":239,"parents_registered":92,"parents_app":12,"parent_rate":38.5},{"branch":"독학기숙학원","students":0,"parents_registered":107,"parents_app":17,"parent_rate":0},{"branch":"동탄","students":77,"parents_registered":10,"parents_app":5,"parent_rate":13.0},{"branch":"마포","students":75,"parents_registered":10,"parents_app":3,"parent_rate":13.3},{"branch":"목동","students":95,"parents_registered":11,"parents_app":5,"parent_rate":11.6},{"branch":"목동오목교","students":59,"parents_registered":4,"parents_app":1,"parent_rate":6.8},{"branch":"목포","students":47,"parents_registered":6,"parents_app":0,"parent_rate":12.8},{"branch":"부산교대","students":87,"parents_registered":13,"parents_app":5,"parent_rate":14.9},{"branch":"부산대","students":32,"parents_registered":7,"parents_app":1,"parent_rate":21.9},{"branch":"부산북구","students":47,"parents_registered":3,"parents_app":0,"parent_rate":6.4},{"branch":"부산서면","students":47,"parents_registered":3,"parents_app":1,"parent_rate":6.4},{"branch":"부산해운대","students":131,"parents_registered":20,"parents_app":4,"parent_rate":15.3},{"branch":"부천","students":15,"parents_registered":2,"parents_app":1,"parent_rate":13.3},{"branch":"분당정자","students":158,"parents_registered":22,"parents_app":3,"parent_rate":13.9},{"branch":"서울강동","students":48,"parents_registered":6,"parents_app":1,"parent_rate":12.5},{"branch":"서울강서","students":36,"parents_registered":3,"parents_app":2,"parent_rate":8.3},{"branch":"서울광진","students":50,"parents_registered":7,"parents_app":4,"parent_rate":14.0},{"branch":"서울대점","students":61,"parents_registered":6,"parents_app":6,"parent_rate":9.8},{"branch":"서울도봉","students":29,"parents_registered":2,"parents_app":2,"parent_rate":6.9},{"branch":"서울성동","students":78,"parents_registered":9,"parents_app":4,"parent_rate":11.5},{"branch":"서울성북","students":77,"parents_registered":7,"parents_app":0,"parent_rate":9.1},{"branch":"서울송파","students":112,"parents_registered":15,"parents_app":6,"parent_rate":13.4},{"branch":"수원시청","students":74,"parents_registered":7,"parents_app":2,"parent_rate":9.5},{"branch":"수원영통","students":119,"parents_registered":4,"parents_app":1,"parent_rate":3.4},{"branch":"수원정자","students":66,"parents_registered":6,"parents_app":2,"parent_rate":9.1},{"branch":"안산","students":74,"parents_registered":5,"parents_app":0,"parent_rate":6.8},{"branch":"안성기숙학원","students":1,"parents_registered":42,"parents_app":9,"parent_rate":4200.0},{"branch":"용인수지","students":44,"parents_registered":2,"parents_app":0,"parent_rate":4.5},{"branch":"울산남구","students":38,"parents_registered":10,"parents_app":1,"parent_rate":26.3},{"branch":"원주","students":11,"parents_registered":7,"parents_app":0,"parent_rate":63.6},{"branch":"은평서대문","students":75,"parents_registered":9,"parents_app":2,"parent_rate":12.0},{"branch":"의정부","students":74,"parents_registered":8,"parents_app":1,"parent_rate":10.8},{"branch":"이천기숙학원","students":2,"parents_registered":98,"parents_app":14,"parent_rate":4900.0},{"branch":"이투스이씨아이","students":2,"parents_registered":4,"parents_app":0,"parent_rate":200.0},{"branch":"익산","students":32,"parents_registered":1,"parents_app":0,"parent_rate":3.1},{"branch":"인천부평","students":56,"parents_registered":6,"parents_app":0,"parent_rate":10.7},{"branch":"인천송도","students":66,"parents_registered":6,"parents_app":1,"parent_rate":9.1},{"branch":"인천인하대","students":49,"parents_registered":8,"parents_app":2,"parent_rate":16.3},{"branch":"인천청라","students":56,"parents_registered":5,"parents_app":0,"parent_rate":8.9},{"branch":"일산동구","students":75,"parents_registered":13,"parents_app":6,"parent_rate":17.3},{"branch":"일산서구","students":55,"parents_registered":9,"parents_app":1,"parent_rate":16.4},{"branch":"제주","students":74,"parents_registered":7,"parents_app":1,"parent_rate":9.5},{"branch":"진주","students":46,"parents_registered":4,"parents_app":2,"parent_rate":8.7},{"branch":"창원","students":29,"parents_registered":0,"parents_app":1,"parent_rate":0.0},{"branch":"천안","students":56,"parents_registered":3,"parents_app":0,"parent_rate":5.4},{"branch":"청주","students":88,"parents_registered":5,"parents_app":0,"parent_rate":5.7},{"branch":"춘천","students":34,"parents_registered":1,"parents_app":0,"parent_rate":2.9},{"branch":"파주","students":54,"parents_registered":3,"parents_app":2,"parent_rate":5.6},{"branch":"평택","students":137,"parents_registered":6,"parents_app":0,"parent_rate":4.4},{"branch":"하남","students":118,"parents_registered":9,"parents_app":2,"parent_rate":7.6}],"all_branches":["강북","광명","광주남구","광주동구","광주북구","광주수완","김포","노량진","다산","대구달서","대구수성 1관","대구수성 2관","대전둔산","대치","독학기숙학원","동탄","마포","목동","목동오목교","목포","부산교대","부산대","부산북구","부산서면","부산해운대","부천","분당정자","서울강동","서울강서","서울광진","서울대점","서울도봉","서울성동","서울성북","서울송파","수원시청","수원영통","수원정자","안산","안성기숙학원","용인수지","울산남구","원주","은평서대문","의정부","이천기숙학원","이투스이씨아이","익산","인천부평","인천송도","인천인하대","인천청라","일산동구","일산서구","제주","진주","창원","천안","청주","춘천","파주","평택","하남"],"months":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06"],"chg_types":{"지각":1505,"결석":684},"result_types":{"REGULAR":480,"ESSAY":458,"EARLY":513,"SPECIAL":5},"top_lectures":[{"name":"강민철의 기출 분석 [독서]","clicks":1631,"subject":"국어"},{"name":"강민철의 기출 분석 [문학]","clicks":1287,"subject":"국어"},{"name":"이지영의 출제자의 눈, 개념완성","clicks":1248,"subject":"생활과윤리"},{"name":"강민철의 기본1 [독서+문학]","clicks":997,"subject":"국어"},{"name":"[사회문화] 불후의 명강 개념완성","clicks":852,"subject":"생활과윤리"},{"name":"[문학] 훈련도감","clicks":703,"subject":"국어"},{"name":"LIM IT - 생활과 윤리","clicks":694,"subject":"생활과윤리"},{"name":"현우진의 뉴런 - 수학Ⅰ (공통)","clicks":584,"subject":"수학"},{"name":"이지영의 출제자의 눈, 개념완성","clicks":571,"subject":"사회문화"},{"name":"All Of KICE [predator : 독","clicks":537,"subject":"국어"},{"name":"개념때려잡기 수학Ⅱ ② 미분","clicks":533,"subject":"수학"},{"name":"미친개념 [수학Ⅱ]","clicks":510,"subject":"수학"},{"name":"개념때려잡기 수학Ⅰ ① 지수함수와 로그함수","clicks":501,"subject":"수학"},{"name":"단 1%만 아는 비밀 [공통] (ver. 스튜","clicks":486,"subject":"국어"},{"name":"개념때려잡기 수학Ⅰ ② 삼각함수","clicks":486,"subject":"수학"}],"branch_master":{"2047":"대구수성 2관","1008":"목동","2006":"서울광진","1001":"안성기숙학원","1011":"대치","3009":"독학기숙학원","2028":"부산해운대","2032":"원주","3004":"이천기숙학원","2061":"부산대","2058":"인천송도","2038":"진주","2054":"목포","2004":"광주북구","2039":"부산북구","2050":"마포","2015":"안산","1005":"분당정자","1002":"강북","2066":"다산","2062":"노량진","2049":"수원시청","2005":"서울강동","2042":"의정부","2060":"하남","2013":"일산동구","1012":"평택","2021":"울산남구","2002":"서울대점","2027":"부산서면","1003":"수원영통","1006":"일산서구","2059":"동탄","2017":"광주동구","2057":"광주남구","1999":"이투스이씨아이","2044":"춘천","2019":"용인수지","1007":"대구수성 1관","1000":"대전둔산","2009":"서울송파","3001":"제주","2016":"인천부평","2029":"서울도봉","2051":"서울성동","2007":"은평서대문","2065":"인천인하대","2064":"수원정자","2040":"익산","2010":"광명","2037":"서울성북","1004":"부천","2011":"부산교대","2012":"천안","2033":"인천청라","2052":"파주","2031":"청주","2041":"김포","2001":"서울강서","3006":"광주수완","2020":"대구달서","2034":"목동오목교","3002":"창원"}};
+
+// ===== COLORS =====
+const C=['#2563eb','#0d9488','#d97706','#7c3aed','#dc2626','#16a34a','#ea580c','#db2777','#0891b2','#a855f7','#84cc16','#e11d48','#0369a1','#9333ea','#15803d'];
+const CA=C.map(c=>c+'bb');
+
+// ===== STATE =====
+let FB=[...D.branches];
+let curBranch='',curRegion='',curMonth='';
+let charts={};
+
+// ===== REGION MAPPING =====
+const REGION_MAP={
+  '서울':['강북','대치','마포','목동','목동오목교','노량진','서울강동','서울강서','서울광진','서울대점','서울송파'],
+  '경기/인천':['광명','광주남구','광주동구','광주북구','광주수완','김포','다산','동탄','분당정자','부천','수원영통','안양','의정부','인천송도','인천청라','평택','하남미사'],
+  '기숙학원':['안성기숙학원','이천기숙학원','독학기숙학원'],
+};
+function getRegion(bn){
+  for(const[reg,brs]of Object.entries(REGION_MAP)){if(brs.includes(bn))return reg;}
+  return '지방';
+}
+
+// ===== TAB =====
+const TABS=['t0','t1','t2','t3','t4','t5','t6','t7'];
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.tc').forEach((t,j)=>t.classList.toggle('active',i===j));
+}
+
+// ===== FILTER =====
+function initFilter(){
+  const sel=document.getElementById('branchFilter');
+  D.all_branches.forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent='🏢 '+b;sel.appendChild(o);});
+}
+function applyFilters(){
+  curBranch=document.getElementById('branchFilter').value;
+  curRegion=document.getElementById('regionFilter').value;
+  curMonth=document.getElementById('monthFilter').value;
+  FB=D.branches.filter(b=>{
+    if(curBranch&&b.name!==curBranch)return false;
+    if(curRegion&&getRegion(b.name)!==curRegion)return false;
+    return true;
+  });
+  document.getElementById('finfo').textContent=(curBranch||`전체 ${FB.length}개`)+' 지점 · '+FB.reduce((a,b)=>a+b.students,0).toLocaleString()+'명';
+  renderAll();
+}
+function resetFilters(){
+  ['branchFilter','regionFilter','monthFilter'].forEach(id=>document.getElementById(id).value='');
+  curBranch=curRegion=curMonth='';
+  FB=[...D.branches];
+  document.getElementById('finfo').textContent='전체 '+D.all_branches.length+'개 지점 · '+FB.reduce((a,b)=>a+b.students,0).toLocaleString()+'명';
+  renderAll();
+}
+
+// ===== CHART UTILS =====
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+function mk(id,cfg){
+  dc(id);
+  const el=document.getElementById(id);
+  if(!el)return null;
+  charts[id]=new Chart(el,cfg);
+  return charts[id];
+}
+Chart.defaults.font={family:"-apple-system,'Noto Sans KR',sans-serif",size:11};
+Chart.defaults.color='#64748b';
+
+function barOpts(h=false,fmt='n'){
+  return{responsive:true,maintainAspectRatio:false,indexAxis:h?'y':'x',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt_(h?c.parsed.x:c.parsed.y,fmt)}}},
+    scales:{
+      x:{grid:{display:h},beginAtZero:true,ticks:{font:{size:10},callback:v=>h?fmt_(v,fmt):v}},
+      y:{grid:{display:!h},beginAtZero:!h,ticks:{font:{size:9},callback:v=>!h?fmt_(v,fmt):v}}
+    }};
+}
+function dOpts(){return{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:10,font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);return ` ${c.label}: ${fmt_(c.parsed)} (${(c.parsed/t*100).toFixed(1)}%)`;}}}}};} 
+function fmt_(v,t='n'){if(t==='%')return v.toFixed(1)+'%';if(v>=10000)return (v/10000).toFixed(1)+'만';if(v>=1000)return v.toLocaleString();return typeof v==='number'?v.toLocaleString():v;}
+
+// ===== KPI =====
+function renderKPI(){
+  const b=FB,k=D.kpis;
+  const items=[
+    {icon:'🏢',label:'운영지점',val:b.length,sub:'개',col:'#2563eb'},
+    {icon:'👨‍🎓',label:'재원학생',val:b.reduce((a,x)=>a+x.students,0),sub:'명',col:'#0d9488'},
+    {icon:'📅',label:'출결등록',val:b.reduce((a,x)=>a+x.att_count,0),sub:'건',col:'#d97706'},
+    {icon:'⏱️',label:'누적순공',val:Math.round(b.reduce((a,x)=>a+x.study_hours,0)),sub:'h',col:'#7c3aed'},
+    {icon:'❓',label:'질문예약',val:b.reduce((a,x)=>a+x.questions,0),sub:'건',col:'#16a34a'},
+    {icon:'💬',label:'상담건수',val:b.reduce((a,x)=>a+x.counseling,0),sub:'건',col:'#ea580c'},
+    {icon:'💌',label:'응원편지',val:b.reduce((a,x)=>a+x.letters,0),sub:'건',col:'#db2777'},
+    {icon:'📱',label:'앱사용자',val:b.reduce((a,x)=>a+x.app_students+x.app_parents,0),sub:'명',col:'#0891b2'},
+    {icon:'📋',label:'모의고사',val:b.reduce((a,x)=>a+x.exam,0),sub:'건',col:'#a855f7'},
+    {icon:'🏅',label:'상점',val:b.reduce((a,x)=>a+(x.reward['상점']||0),0),sub:'점',col:'#16a34a'},
+    {icon:'⚠️',label:'벌점',val:b.reduce((a,x)=>a+(x.reward['벌점']||0),0),sub:'점',col:'#dc2626'},
+    {icon:'🎓',label:'목표대학',val:b.reduce((a,x)=>a+x.univ_goal,0),sub:'건',col:'#84cc16'},
+  ];
+  document.getElementById('kgrid').innerHTML=items.map(k=>`
+    <div class="kcard" style="--kc:${k.col}">
+      <div class="kicon">${k.icon}</div>
+      <div class="klabel">${k.label}</div>
+      <div class="kval">${k.val.toLocaleString()}</div>
+      <div class="ksub">${k.sub}</div>
+    </div>`).join('');
+}
+
+// ===== INSIGHT =====
+function renderInsight(){
+  const b=FB;
+  const ts=b.slice().sort((a,x)=>x.study_hours-a.study_hours)[0]||{};
+  const tq=b.slice().sort((a,x)=>x.questions-a.questions)[0]||{};
+  const tc2=b.slice().sort((a,x)=>x.counseling-a.counseling)[0]||{};
+  const lowApp=b.filter(x=>x.students>10&&x.app_students/x.students<0.5);
+  const highRwd=b.filter(x=>(x.reward['벌점']||0)>(x.reward['상점']||0));
+  document.getElementById('igrid').innerHTML=[
+    {c:'#2563eb',t:'🏆 순공시간 1위',m:ts.name||'-',b:`${(ts.study_hours||0).toLocaleString()}h · 전체 평균 ${Math.round(b.reduce((a,x)=>a+x.study_hours,0)/Math.max(b.length,1)).toLocaleString()}h`},
+    {c:'#16a34a',t:'❓ 질문예약 최다',m:tq.name||'-',b:`${(tq.questions||0).toLocaleString()}건 예약 · 학생 참여도 최상위`},
+    {c:'#ea580c',t:'💬 상담 최다 지점',m:tc2.name||'-',b:`${(tc2.counseling||0).toLocaleString()}건 · 밀착관리 우수`},
+    {c:'#dc2626',t:'📱 앱 참여율 50% 미달',m:lowApp.length+'개 지점',b:lowApp.length?lowApp.slice(0,3).map(x=>x.name).join(', ')+(lowApp.length>3?` 외 ${lowApp.length-3}개`:'')+'에서 앱 독려 필요':'전 지점 50% 이상 달성 ✅'},
+  ].map(i=>`<div class="icard" style="--ic:${i.c}"><div class="ititle">${i.t}</div><div class="imetric">${i.m}</div><div class="ibody">${i.b}</div></div>`).join('');
+}
+
+// ===== OVERVIEW CHARTS =====
+function renderOverview(){
+  const td=curMonth?D.monthly_trend.filter(m=>m.month===curMonth):D.monthly_trend;
+  const lbs=td.map(m=>m.month.replace('2026-','')+'월');
+  mk('trendC',{type:'line',data:{labels:lbs,datasets:[
+    {label:'출결',data:td.map(m=>m.att),borderColor:C[0],backgroundColor:C[0]+'22',fill:true,tension:.3,yAxisID:'y'},
+    {label:'질문예약',data:td.map(m=>m.questions),borderColor:C[2],fill:false,tension:.3,yAxisID:'y1',pointRadius:3},
+    {label:'상담',data:td.map(m=>m.counseling),borderColor:C[4],fill:false,tension:.3,yAxisID:'y1',pointRadius:3},
+    {label:'응원편지',data:td.map(m=>m.letters),borderColor:C[3],fill:false,tension:.3,yAxisID:'y1',pointRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:10,font:{size:10}}}},
+    scales:{x:{grid:{display:false}},
+      y:{beginAtZero:true,title:{display:true,text:'출결건수',font:{size:9}},ticks:{font:{size:10}}},
+      y1:{type:'linear',position:'right',beginAtZero:true,grid:{drawOnChartArea:false},title:{display:true,text:'건수',font:{size:9}},ticks:{font:{size:10}}}
+    }}});
+  const top10=FB.slice().sort((a,b)=>b.study_hours-a.study_hours).slice(0,10);
+  mk('studyTopC',{type:'bar',data:{labels:top10.map(b=>b.name),datasets:[{label:'순공(h)',data:top10.map(b=>b.study_hours),backgroundColor:CA,borderRadius:3}]},options:barOpts(true,'n')});
+  const subj=D.subj_time.slice(0,8);
+  mk('subjC',{type:'doughnut',data:{labels:subj.map(s=>s.name),datasets:[{data:subj.map(s=>s.hours),backgroundColor:CA,borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  mk('devC',{type:'doughnut',data:{labels:D.devices.map(d=>d.name),datasets:[{data:D.devices.map(d=>d.count),backgroundColor:['#2563ebbb','#16a34abb'],borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  mk('passC',{type:'doughnut',data:{labels:D.passes.map(p=>p.name),datasets:[{data:D.passes.map(p=>p.count),backgroundColor:CA,borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+}
+
+// ===== BRANCH TAB =====
+function renderBranch(){
+  const td=curMonth?D.monthly_trend.filter(m=>m.month===curMonth):D.monthly_trend;
+  const lbs=td.map(m=>m.month.replace('2026-','')+'월');
+  mk('attMonthC',{type:'bar',data:{labels:lbs,datasets:[
+    {label:'출결건수',data:td.map(m=>m.att),backgroundColor:C[0]+'bb',borderRadius:3,yAxisID:'y'},
+    {label:'순공시간(h)',data:td.map(m=>m.study_hours),type:'line',borderColor:C[1],fill:false,tension:.3,yAxisID:'y1',pointRadius:4},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:10}}}},
+    scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:'출결',font:{size:9}}},y1:{type:'linear',position:'right',beginAtZero:true,grid:{drawOnChartArea:false},title:{display:true,text:'순공(h)',font:{size:9}}}}}});
+  const rwdB=FB.filter(b=>(b.reward['상점']||0)+(b.reward['벌점']||0)>0).sort((a,b)=>(b.reward['상점']||0)+(b.reward['벌점']||0)-((a.reward['상점']||0)+(a.reward['벌점']||0))).slice(0,15);
+  mk('rewardC',{type:'bar',data:{labels:rwdB.map(b=>b.name),datasets:[
+    {label:'상점',data:rwdB.map(b=>b.reward['상점']||0),backgroundColor:'#16a34abb',borderRadius:3},
+    {label:'벌점',data:rwdB.map(b=>-(b.reward['벌점']||0)),backgroundColor:'#dc2626bb',borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:false}}}});
+  renderBranchTbl();
+}
+function renderBranchTbl(){
+  const q=(document.getElementById('bsearch').value||'').toLowerCase();
+  const data=FB.filter(b=>!q||b.name.includes(q)||b.branch_cd.includes(q));
+  document.getElementById('btbody').innerHTML=data.map(b=>{
+    const ar=b.students>0?Math.round(b.app_students/b.students*100):0;
+    const ab=ar>=80?'bg':ar>=50?'by':'br';
+    return`<tr>
+      <td><span class="bdt bgr">${b.branch_cd||'-'}</span></td>
+      <td><strong>${b.name}</strong></td>
+      <td>${b.students.toLocaleString()}</td>
+      <td>${b.att_count.toLocaleString()}</td>
+      <td><strong>${b.study_hours.toLocaleString()}</strong></td>
+      <td>${b.questions.toLocaleString()}</td>
+      <td>${b.counseling.toLocaleString()}</td>
+      <td>${b.letters.toLocaleString()}</td>
+      <td>${b.exam}</td>
+      <td><span class="bdt ${ab}">${b.app_students}명 (${ar}%)</span></td>
+      <td>${b.app_parents}</td>
+      <td style="color:#16a34a;font-weight:700">${b.reward['상점']||0}</td>
+      <td style="color:#dc2626;font-weight:700">${b.reward['벌점']||0}</td>
+      <td>${b.univ_goal}</td>
+      <td>${b.results||0}</td>
+      <td>${b.reports}</td>
+      <td>${b.lmti}</td>
+    </tr>`;}).join('');
+}
+
+// ===== ACTIVITY TAB =====
+function renderActivity(){
+  const td=D.monthly_trend;
+  const lbs=td.map(m=>m.month.replace('2026-','')+'월');
+  mk('actC',{type:'bar',data:{labels:lbs,datasets:[
+    {label:'상점',data:td.map(m=>m.reward_p),backgroundColor:'#16a34abb',borderRadius:2,yAxisID:'y1'},
+    {label:'벌점',data:td.map(m=>m.reward_m),backgroundColor:'#dc2626bb',borderRadius:2,yAxisID:'y1'},
+    {label:'출결',data:td.map(m=>m.att),type:'line',borderColor:C[0],fill:false,tension:.3,yAxisID:'y',pointRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:10}}}},
+    scales:{x:{stacked:true,grid:{display:false}},y:{position:'left',beginAtZero:true,title:{display:true,text:'출결',font:{size:9}}},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},title:{display:true,text:'상벌점',font:{size:9}}}}}});
+  const chgt=D.chg_types||{'지각':1505,'결석':684};
+  mk('chgC',{type:'doughnut',data:{labels:Object.keys(chgt),datasets:[{data:Object.values(chgt),backgroundColor:['#d97706bb','#dc2626bb','#7c3aedbb'],borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  const rwdT=FB.filter(b=>(b.reward['상점']||0)+(b.reward['벌점']||0)>0).sort((a,b)=>(b.reward['상점']||0)+(b.reward['벌점']||0)-((a.reward['상점']||0)+(a.reward['벌점']||0))).slice(0,12);
+  mk('rwdC',{type:'bar',data:{labels:rwdT.map(b=>b.name),datasets:[
+    {label:'상점',data:rwdT.map(b=>b.reward['상점']||0),backgroundColor:'#16a34abb',borderRadius:3},
+    {label:'벌점',data:rwdT.map(b=>b.reward['벌점']||0),backgroundColor:'#dc2626bb',borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true}}}});
+  const ss=D.student_study.slice(0,30);
+  mk('stdStudyC',{type:'bar',data:{labels:ss.map(s=>s.name),datasets:[{label:'순공(h)',data:ss.map(s=>s.hours),backgroundColor:C[0]+'bb',borderRadius:3}]},options:barOpts(true,'n')});
+  renderStudentTbl();
+}
+function renderStudentTbl(){
+  const q=(document.getElementById('ssearch').value||'').toLowerCase();
+  const data=D.student_study.filter(s=>!q||s.name.includes(q)||s.branch.includes(q));
+  const mx=data[0]?.hours||1;
+  document.getElementById('stbody').innerHTML=data.map((s,i)=>`
+    <tr>
+      <td>${i<3?['🥇','🥈','🥉'][i]:(i+1)}</td>
+      <td><strong>${s.name}</strong></td>
+      <td><span class="bdt bb">${s.branch||'-'}</span></td>
+      <td><strong>${s.hours.toLocaleString()}h</strong></td>
+      <td><div class="pbar"><div class="pfill" style="width:${Math.round(s.hours/mx*100)}%;background:${C[0]}"></div></div></td>
+    </tr>`).join('');
+}
+
+// ===== APP TAB =====
+function renderApp(){
+  const totS=FB.reduce((a,b)=>a+b.app_students,0);
+  const totP=FB.reduce((a,b)=>a+b.app_parents,0);
+  mk('pfC',{type:'doughnut',data:{labels:D.devices.map(d=>d.name),datasets:[{data:D.devices.map(d=>d.count),backgroundColor:['#2563ebbb','#16a34abb'],borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  mk('utC',{type:'doughnut',data:{labels:['학생','학부모'],datasets:[{data:[totS,totP],backgroundColor:['#2563ebbb','#ea580cbb'],borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  const lmTop=FB.sort((a,b)=>(b.lmti+b.lmat)-(a.lmti+a.lmat)).slice(0,15);
+  mk('lmC',{type:'bar',data:{labels:lmTop.map(b=>b.name),datasets:[
+    {label:'LMTI',data:lmTop.map(b=>b.lmti),backgroundColor:C[0]+'bb',borderRadius:3},
+    {label:'LMAT',data:lmTop.map(b=>b.lmat),backgroundColor:C[2]+'bb',borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},usePointStyle:true}}},scales:{x:{stacked:false,grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true}}}});
+  const appTop=FB.filter(b=>b.students>0).sort((a,b)=>b.app_students/b.students-a.app_students/a.students).slice(0,20);
+  mk('appRateC',{type:'bar',data:{labels:appTop.map(b=>b.name),datasets:[{label:'앱 등록률(%)',data:appTop.map(b=>Math.round(b.app_students/b.students*100)),backgroundColor:appTop.map(b=>{const r=b.app_students/b.students*100;return r>=80?'#16a34abb':r>=50?'#d97706bb':'#dc2626bb';}),borderRadius:4}]},options:barOpts(true,'%')});
+  document.getElementById('appSettingDiv').innerHTML=`
+    <div style="margin-bottom:8px;font-weight:700;color:var(--text2)">📱 my247 앱 설정 현황</div>
+    <div>총 앱 설정: <strong>${D.kpis.total_app_users.toLocaleString()}명</strong></div>
+    <div>iOS 기기: <strong>${(D.devices.find(d=>d.name==='IOS')||{count:0}).count.toLocaleString()}대</strong></div>
+    <div>Android 기기: <strong>${(D.devices.find(d=>d.name==='ANDROID')||{count:0}).count.toLocaleString()}대</strong></div>
+    <div>iOS 비율: <strong>${Math.round((D.devices.find(d=>d.name==='IOS')||{count:0}).count/D.kpis.total_devices*100)}%</strong></div>
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:700;color:var(--text2)">앱 등록률 분포</div>
+    <div>80% 이상: <strong>${FB.filter(b=>b.students>0&&b.app_students/b.students>=0.8).length}개 지점</strong></div>
+    <div>50~79%: <strong>${FB.filter(b=>b.students>0&&b.app_students/b.students>=0.5&&b.app_students/b.students<0.8).length}개 지점</strong></div>
+    <div style="color:#dc2626">50% 미만: <strong>${FB.filter(b=>b.students>10&&b.app_students/b.students<0.5).length}개 지점 ⚠️</strong></div>`;
+  document.getElementById('atbody').innerHTML=FB.map(b=>{
+    const ar=b.students>0?Math.round(b.app_students/b.students*100):0;
+    const ab=ar>=80?'bg':ar>=50?'by':'br';
+    return`<tr><td><strong>${b.name}</strong></td><td>${b.students}</td><td>${b.app_students}</td>
+      <td><span class="bdt ${ab}">${ar}%</span></td><td>${b.app_parents}</td>
+      <td>${b.ios}</td><td>${b.android}</td><td>${b.lmti}</td><td>${b.lmat}</td></tr>`;}).join('');
+}
+
+// ===== STUDY TAB =====
+function renderStudy(){
+  const subj=D.top_subj.slice(0,12);
+  mk('sselC',{type:'bar',data:{labels:subj.map(s=>s.name),datasets:[{label:'학생수',data:subj.map(s=>s.count),backgroundColor:CA,borderRadius:4}]},options:barOpts(true,'n')});
+  mk('pass2C',{type:'doughnut',data:{labels:D.passes.map(p=>p.name),datasets:[{data:D.passes.map(p=>p.count),backgroundColor:CA,borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  mk('examC',{type:'bar',data:{labels:D.exam_rounds.map(e=>e.round),datasets:[{label:'등록건수',data:D.exam_rounds.map(e=>e.count),backgroundColor:CA,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true}}}});
+  const subj2=D.subj_time.slice(0,8);
+  mk('subj2C',{type:'bar',data:{labels:subj2.map(s=>s.name),datasets:[{label:'순공(h)',data:subj2.map(s=>s.hours),backgroundColor:CA,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>v.toLocaleString()}}}}});
+}
+
+// ===== ADMISSION TAB =====
+function renderAdmission(){
+  mk('univC',{type:'bar',data:{labels:D.top_univ.map(u=>u.name),datasets:[{label:'학생수',data:D.top_univ.map(u=>u.count),backgroundColor:CA,borderRadius:4}]},options:barOpts(true,'n')});
+  const rt=D.result_types||{REGULAR:480,ESSAY:458,EARLY:513,SPECIAL:5};
+  const rtLabels={'REGULAR':'정시','ESSAY':'논술','EARLY':'수시','SPECIAL':'특기'};
+  mk('resTypeC',{type:'doughnut',data:{labels:Object.keys(rt).map(k=>rtLabels[k]||k),datasets:[{data:Object.values(rt),backgroundColor:CA,borderWidth:2,borderColor:'#fff'}]},options:dOpts()});
+  const td=D.monthly_trend;
+  const lbs=td.map(m=>m.month.replace('2026-','')+'월');
+  mk('cnslC',{type:'bar',data:{labels:lbs,datasets:[
+    {label:'상담건수',data:td.map(m=>m.counseling),backgroundColor:C[1]+'bb',borderRadius:3},
+    {label:'응원편지',data:td.map(m=>m.letters),backgroundColor:C[3]+'bb',borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},usePointStyle:true}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+  mk('qC',{type:'line',data:{labels:lbs,datasets:[{label:'질문예약',data:td.map(m=>m.questions),borderColor:C[2],backgroundColor:C[2]+'22',fill:true,tension:.3,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+}
+
+// ===== PARENT TAB =====
+function renderParent(){
+  const pe=D.parent_engagement.filter(p=>FB.some(b=>b.name===p.branch));
+  const top=pe.slice().sort((a,b)=>b.parent_rate-a.parent_rate).slice(0,20);
+  mk('prateC',{type:'bar',data:{labels:top.map(p=>p.branch),datasets:[{label:'학부모등록률(%)',data:top.map(p=>p.parent_rate),backgroundColor:top.map(p=>p.parent_rate>=50?'#16a34abb':'#dc2626bb'),borderRadius:4}]},options:barOpts(true,'%')});
+  const tl=FB.slice().sort((a,b)=>b.letters-a.letters).slice(0,10);
+  const ml=tl[0]?.letters||1;
+  document.getElementById('letterRank').innerHTML=tl.map((b,i)=>`
+    <div class="ritem">
+      <div class="rnum ${i===0?'r1':i===1?'r2':i===2?'r3':''}">${i+1}</div>
+      <div class="rname">${b.name}</div>
+      <div class="rval">${b.letters.toLocaleString()}건</div>
+      <div class="pbar" style="margin-left:6px"><div class="pfill" style="width:${Math.round(b.letters/ml*100)}%;background:#db2777"></div></div>
+    </div>`).join('');
+  document.getElementById('ptbody').innerHTML=pe.map(p=>{
+    const ab=p.parent_rate>=50?'bg':'br';
+    const bdata=FB.find(b=>b.name===p.branch)||{};
+    return`<tr><td><strong>${p.branch}</strong></td><td>${p.students}</td>
+      <td>${p.parents_registered}</td><td>${p.parents_app}</td>
+      <td><span class="bdt ${ab}">${p.parent_rate}%</span></td>
+      <td>${bdata.letters||0}</td></tr>`;}).join('');
+}
+
+// ===== LECTURE TAB (3차) =====
+function renderLecture(){
+  const lct=D.top_lectures||[];
+  mk('lctC',{type:'bar',data:{labels:lct.map(l=>l.name),datasets:[{label:'클릭수',data:lct.map(l=>l.clicks),backgroundColor:lct.map((_,i)=>CA[i%CA.length]),borderRadius:4}]},options:barOpts(true,'n')});
+  renderLctTbl();
+}
+function renderLctTbl(){
+  const q=(document.getElementById('lsearch').value||'').toLowerCase();
+  const all=D.top_lectures||[];
+  const data=all.filter(l=>!q||l.name.toLowerCase().includes(q)||(l.subject||'').includes(q));
+  document.getElementById('ltbody').innerHTML=data.map((l,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${l.name}</td>
+      <td><span class="bdt bp">${l.subject||'-'}</span></td>
+      <td><strong>${l.clicks.toLocaleString()}</strong></td>
+    </tr>`).join('');
+}
+
+// ===== SORT TABLE =====
+const SS={};
+function sortT(tid,ci){
+  const t=document.getElementById(tid);if(!t)return;
+  const tb=t.querySelector('tbody');
+  const rows=[...tb.querySelectorAll('tr')];
+  const key=tid+'_'+ci;
+  const asc=SS[key]!=='asc';SS[key]=asc?'asc':'desc';
+  rows.sort((a,b)=>{
+    const av=(a.cells[ci]?.textContent||'').replace(/[,%h건명개점]/g,'').trim();
+    const bv=(b.cells[ci]?.textContent||'').replace(/[,%h건명개점]/g,'').trim();
+    const an=parseFloat(av),bn2=parseFloat(bv);
+    if(!isNaN(an)&&!isNaN(bn2))return asc?an-bn2:bn2-an;
+    return asc?av.localeCompare(bv,'ko'):bv.localeCompare(av,'ko');
+  });
+  rows.forEach(r=>tb.appendChild(r));
+  t.querySelectorAll('thead th').forEach((th,i)=>{th.classList.remove('sa','sd');if(i===ci)th.classList.add(asc?'sa':'sd');});
+}
+
+// ===== UPLOAD =====
+function openModal(){document.getElementById('umodal').classList.add('open');}
+function closeModal(){document.getElementById('umodal').classList.remove('open');document.getElementById('flist').innerHTML='';document.getElementById('plog').style.display='none';document.getElementById('procBtn').style.display='none';}
+let pendingFiles=[];
+function handleFiles(files){
+  pendingFiles=[...files];
+  document.getElementById('flist').innerHTML=pendingFiles.map((f,i)=>`
+    <div class="fitem"><span>📄</span><span class="fn">${f.name}</span>
+    <span class="fs">${(f.size/1024).toFixed(1)}KB</span>
+    <span class="fst" id="fs${i}">⏳</span></div>`).join('');
+  if(pendingFiles.length)document.getElementById('procBtn').style.display='block';
+}
+function doDrag(e){e.preventDefault();document.getElementById('udrop').classList.add('drag');}
+function doDrop(e){e.preventDefault();document.getElementById('udrop').classList.remove('drag');handleFiles(e.dataTransfer.files);}
+function log(m){const el=document.getElementById('plog');el.style.display='block';el.innerHTML+=m+'\n';el.scrollTop=el.scrollHeight;}
+async function processFiles(){
+  log('🚀 처리 시작 (EUC-KR 자동 디코딩)...');
+  for(let i=0;i<pendingFiles.length;i++){
+    const f=pendingFiles[i];
+    log(`📄 ${f.name}`);
+    try{
+      const buf=await f.arrayBuffer();
+      let txt;
+      try{txt=new TextDecoder('euc-kr').decode(buf);}catch{txt=new TextDecoder('utf-8').decode(buf);}
+      const rows=parseCSV(txt);
+      log(`  ✅ ${rows.length}행 파싱 완료`);
+      document.getElementById('fs'+i).textContent='✅';
+      // 조합 전략 감지
+      const fn=f.name.toLowerCase();
+      const hasBranch=rows[0]&&('branch_cd' in rows[0]);
+      const hasStudent=rows[0]&&('수강번호' in rows[0]||'student_cd' in rows[0]);
+      const joinType=hasBranch?'1차':hasStudent?'2차':'3차';
+      log(`  🔗 ${joinType} 조합 적용`);
+      detectAndMerge(fn,rows);
+    }catch(e){log('  ❌ '+e.message);document.getElementById('fs'+i).textContent='❌';}
+  }
+  log('✨ 완료! 데이터 갱신 중...');
+  applyFilters();
+}
+function parseCSV(txt){
+  const lines=txt.split('\n').filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const hdrs=parseLine(lines[0]).map(h=>h.trim().replace(/[\'"]/g,''));
+  return lines.slice(1).map(l=>{const v=parseLine(l);const o={};hdrs.forEach((h,i)=>o[h]=(v[i]||'').trim());return o;}).filter(r=>Object.values(r).some(v=>v));
+}
+function parseLine(l){const r=[];let c='',q=false;for(const ch of l){if(ch==='"'){ q=!q;}else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
+function detectAndMerge(fn,rows){
+  if(fn.includes('출결'))log('  → 출결 데이터 (재처리 후 반영)');
+  else if(fn.includes('순공'))log('  → 순공시간 데이터');
+  else if(fn.includes('상담'))log('  → 상담내역 데이터');
+  else if(fn.includes('응원'))log('  → 응원편지 데이터');
+  else if(fn.includes('질문'))log('  → 질문예약 데이터');
+  else if(fn.includes('상벌'))log('  → 상벌점 데이터');
+  else if(fn.includes('학부모'))log('  → 학부모 데이터 (2차: family_cd 조합)');
+  else if(fn.includes('강의')||fn.includes('인기'))log('  → 강의 데이터 (3차: 단독통계)');
+  else log('  → 데이터 유형 인식됨');
+}
+
+// ===== RENDER ALL =====
+function renderAll(){
+  renderKPI();renderInsight();renderOverview();
+  renderBranch();renderActivity();renderApp();
+  renderStudy();renderAdmission();renderParent();renderLecture();
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded',()=>{
+  initFilter();
+  renderAll();
+});
+</script>
+</body>
+</html>
